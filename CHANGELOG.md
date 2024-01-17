@@ -1,5 +1,14 @@
 # inlang-vs-code-extension
 
+## 1.25.3
+
+### Patch Changes
+
+- Updated dependencies [b920761e6]
+  - @inlang/sdk@0.23.0
+  - @inlang/create-project@1.1.5
+  - @inlang/telemetry@0.3.4
+
 ## 1.25.2
 
 ### Patch Changes
@@ -260,7 +269,7 @@
 
 ### Patch Changes
 
-- 66519584: Fixes https://github.com/inlang/monorepo/issues/927
+- 66519584: Fixes https://github.com/opral/monorepo/issues/927
 
 ## 0.7.4
 
@@ -307,7 +316,7 @@
 
 ### Patch Changes
 
-- 04f5ac93: The ide extension config has been moved back into @inlang/core. For more information, read https://github.com/inlang/monorepo/issues/856.
+- 04f5ac93: The ide extension config has been moved back into @inlang/core. For more information, read https://github.com/opral/monorepo/issues/856.
 - Updated dependencies [04f5ac93]
   - @inlang/core@0.9.0
 
