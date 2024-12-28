@@ -1,4 +1,4 @@
-import type { Message, Pattern, Expression, Text } from "@inlang/sdk2"
+import type { Message, Pattern, Expression, Text } from "@inlang/sdk"
 import { msg } from "./msg.js"
 
 export const getStringFromPattern = (args: {

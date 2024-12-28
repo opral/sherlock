@@ -1,7 +1,7 @@
 {
 	"name": "vs-code-extension",
 	"private": true,
-	"displayName": "Sherlock – inspector for i18n, translations, localization, l10n, i18next, i18n ally alternative",
+	"displayName": "Sherlock - inspector for i18n, translations, localization, l10n, i18next, i18n ally alternative",
 	"type": "module",
 	"description": "Visualize, edit & lint translated strings at a glance via Inline Decorations & Hover Support, and extract new strings with a single click.",
 	"publisher": "inlang",
@@ -36,7 +36,7 @@
 			"activitybar": [
 				{
 					"id": "sherlock",
-					"title": "Sherlock – i18n inspector",
+					"title": "Sherlock - i18n inspector",
 					"icon": "assets/sherlock-vscode-logo.svg"
 				}
 			]
@@ -232,18 +232,17 @@
 		"test:watch": "vitest",
 		"test:e2e": "npm run pretest && wdio run ./test/wdio.conf.ts",
 		"---- LINT ----------------------------------------------------------": "",
-		"lint": "eslint ./src --fix",
 		"format": "prettier ./src --write",
 		"---- OTHER ----------------------------------------------------------": "",
 		"clean": "rm -rf ./dist ./node_modules"
 	},
 	"dependencies": {
-		"@inlang/sdk2": "workspace:*",
-		"@inlang/settings-component2": "workspace:*",
-		"@inlang/bundle-component": "workspace:*",
+		"@inlang/sdk": "workspace:*",
+		"@inlang/settings-component": "workspace:*",
+		"@inlang/editor-component": "workspace:*",
 		"@inlang/recommend-sherlock": "workspace:*",
 		"@inlang/rpc": "workspace:*",
-		"@vitest/coverage-v8": "0.34.6",
+		"@vitest/coverage-v8": "2.1.8",
 		"comlink": "^4.4.1",
 		"fast-glob": "^3.2.12",
 		"https-proxy-agent": "7.0.2",
@@ -251,7 +250,7 @@
 		"prettier": "^3.3.3",
 		"require-from-string": "^2.0.2",
 		"throttle-debounce": "^5.0.0",
-		"vitest": "^2.0.5"
+		"vitest": "^2.1.8"
 	},
 	"devDependencies": {
 		"@sentry/node": "^7.99.0",

@@ -6,7 +6,7 @@ import {
 	invalidJSIdentifier,
 	type LintResult,
 } from "./lintRules.js"
-import { selectBundleNested } from "@inlang/sdk2"
+import { selectBundleNested } from "@inlang/sdk"
 
 // Mocking state and selectBundleNested
 vi.mock("../state.js", () => ({
@@ -25,7 +25,7 @@ vi.mock("../state.js", () => ({
 	}),
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	selectBundleNested: vi.fn(),
 }))
 

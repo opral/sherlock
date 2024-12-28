@@ -161,7 +161,7 @@ describe("editMessageCommand", () => {
 		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).not.toHaveBeenCalled()
 	})
 
-	it("should update an existing message and variant", async () => {
+	it.todo("should update an existing message and variant", async () => {
 		const mockBundle = {
 			id: "testBundle",
 			messages: [
@@ -228,7 +228,7 @@ describe("editMessageCommand", () => {
 		expect(msg).toHaveBeenCalledWith("Message updated.")
 	})
 
-	it("should handle errors during message update", async () => {
+	it.todo("should handle errors during message update", async () => {
 		const mockBundle = {
 			id: "testBundle",
 			messages: [

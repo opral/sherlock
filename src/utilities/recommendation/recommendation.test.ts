@@ -38,9 +38,6 @@ vi.mock("vscode", () => ({
 		parse: vi.fn((uri: string) => ({ toString: () => uri })),
 	},
 }))
-vi.mock("node:path", () => ({
-	join: (...args: string[]) => args.join("/"),
-}))
 vi.mock("node:fs", () => ({
 	existsSync: vi.fn(),
 	readFileSync: vi.fn(),

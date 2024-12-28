@@ -1,4 +1,4 @@
-import { selectBundleNested, type IdeExtensionConfig } from "@inlang/sdk2"
+import { selectBundleNested, type IdeExtensionConfig } from "@inlang/sdk"
 import { state } from "./state.js"
 
 export const getExtensionApi = async (): Promise<IdeExtensionConfig | undefined> =>

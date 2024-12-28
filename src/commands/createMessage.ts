@@ -2,7 +2,7 @@ import { state } from "../utilities/state.js"
 import { msg } from "../utilities/messages/msg.js"
 import { commands, window } from "vscode"
 import { telemetry } from "../services/telemetry/index.js"
-import { humanId } from "@inlang/sdk2"
+import { humanId } from "@inlang/sdk"
 import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 

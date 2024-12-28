@@ -3,7 +3,7 @@ import { state } from "../state.js"
 import { CONFIGURATION } from "../../configuration.js"
 import { getSelectedBundleByBundleIdOrAlias } from "../helper.js"
 import { msg } from "../messages/msg.js"
-import type { BundleNested } from "@inlang/sdk2"
+import type { BundleNested } from "@inlang/sdk"
 
 export async function editorView(args: { bundleId: string; context: vscode.ExtensionContext }) {
 	const bundle = await getSelectedBundleByBundleIdOrAlias(args.bundleId)

@@ -3,7 +3,7 @@ import { rpc } from "@inlang/rpc"
 import { CONFIGURATION } from "../configuration.js"
 import { machineTranslateMessageCommand } from "./machineTranslate.js"
 import { msg } from "../utilities/messages/msg.js"
-import { selectBundleNested, type BundleNested } from "@inlang/sdk2"
+import { selectBundleNested, type BundleNested } from "@inlang/sdk"
 
 vi.mock("vscode", () => ({
 	commands: {
@@ -54,7 +54,7 @@ vi.mock("../utilities/state", () => ({
 	})),
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	selectBundleNested: vi.fn(),
 }))
 

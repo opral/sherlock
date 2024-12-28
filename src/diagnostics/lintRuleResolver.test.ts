@@ -189,6 +189,6 @@ describe("resolveLintRules", () => {
 		await lintRules[0]!.ruleFn("bundleId")
 
 		expect(wrappedRuleFn).toHaveBeenCalledWith("bundleId")
-		expect(wrappedRuleFn.mock.results[0]!.value).resolves.toEqual([])
+		await expect(wrappedRuleFn.mock.results[0]!.value).resolves.toEqual([])
 	})
 })

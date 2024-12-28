@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { loadProjectInMemory, newProject, saveProjectToDirectory } from "@inlang/sdk2"
+import { loadProjectInMemory, newProject, saveProjectToDirectory } from "@inlang/sdk"
 import fs from "node:fs/promises"
 import { createFileSystemMapper } from "../fs/createFileSystemMapper.js"
 import path from "node:path"

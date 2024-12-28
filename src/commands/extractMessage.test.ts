@@ -46,7 +46,7 @@ vi.mock("../utilities/settings/index.js", () => ({
 	getSetting: vi.fn(),
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	humanId: vi.fn().mockReturnValue("generatedId123"),
 	createBundle: vi.fn().mockReturnValue({ id: "generatedId123", alias: "alias123" }),
 	createMessage: vi.fn().mockReturnValue({ id: "messageId123", bundleId: "generatedId123" }),

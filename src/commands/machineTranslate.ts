@@ -1,5 +1,5 @@
 import { commands } from "vscode"
-import { type Bundle } from "@inlang/sdk2"
+import { type Bundle } from "@inlang/sdk"
 import { state } from "../utilities/state.js"
 import { msg } from "../utilities/messages/msg.js"
 import { rpc } from "@inlang/rpc"

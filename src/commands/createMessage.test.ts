@@ -5,7 +5,7 @@ import { window } from "vscode"
 import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { telemetry } from "../services/telemetry/index.js"
-import { humanId } from "@inlang/sdk2"
+import { humanId } from "@inlang/sdk"
 import { state } from "../utilities/state.js"
 
 vi.mock("vscode", () => ({
@@ -43,7 +43,7 @@ vi.mock("../utilities/settings", () => ({
 	getSetting: vi.fn().mockResolvedValue(false),
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	humanId: vi.fn().mockReturnValue("randomBundleId123"),
 	createMessage: vi.fn(),
 }))

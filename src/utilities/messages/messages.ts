@@ -11,7 +11,7 @@ import {
 	type IdeExtensionConfig,
 	type InlangProject,
 	pollQuery,
-} from "@inlang/sdk2"
+} from "@inlang/sdk"
 
 export function createMessageWebviewProvider(args: {
 	context: vscode.ExtensionContext

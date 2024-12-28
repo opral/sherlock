@@ -5,7 +5,7 @@ import { telemetry } from "../services/telemetry/index.js"
 import { CONFIGURATION } from "../configuration.js"
 import { isQuoted, stripQuotes } from "../utilities/messages/isQuoted.js"
 import { getSetting } from "../utilities/settings/index.js"
-import { humanId, type IdeExtensionConfig } from "@inlang/sdk2"
+import { humanId, type IdeExtensionConfig } from "@inlang/sdk"
 
 /**
  * Helps the user to extract messages from the active text editor.

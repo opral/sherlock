@@ -12,7 +12,7 @@ import {
 	type ProjectViewNode,
 	projectView,
 } from "./project.js"
-import { loadProjectFromDirectoryInMemory } from "@inlang/sdk2"
+import { loadProjectFromDirectoryInMemory } from "@inlang/sdk"
 import type { FileSystem } from "../fs/createFileSystemMapper.js"
 
 vi.mock("vscode", () => ({
@@ -36,7 +36,7 @@ vi.mock("vscode", () => ({
 	EventEmitter: vi.fn(),
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	loadProjectFromDirectoryInMemory: vi.fn(),
 }))
 

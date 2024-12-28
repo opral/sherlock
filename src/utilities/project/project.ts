@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { loadProjectFromDirectoryInMemory } from "@inlang/sdk2"
+import { loadProjectFromDirectoryInMemory } from "@inlang/sdk"
 import { CONFIGURATION } from "../../configuration.js"
 import { telemetry } from "../../services/telemetry/index.js"
 import { setState, state } from "../state.js"

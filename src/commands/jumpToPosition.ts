@@ -1,6 +1,6 @@
 import { commands, Position, Range, TextEditorRevealType, window } from "vscode"
 import * as vscode from "vscode"
-import type { Bundle } from "@inlang/sdk2"
+import type { Bundle } from "@inlang/sdk"
 import { capture } from "../services/telemetry/index.js"
 
 export const jumpToPositionCommand = {

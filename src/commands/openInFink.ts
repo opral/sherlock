@@ -1,5 +1,5 @@
 import { Uri, commands, env } from "vscode"
-import type { Bundle } from "@inlang/sdk2"
+import type { Bundle } from "@inlang/sdk"
 // import { CONFIGURATION } from "../configuration.js"
 
 export const openInFinkCommand = {

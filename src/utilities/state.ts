@@ -1,4 +1,4 @@
-import type { InlangProject, InlangPlugin } from "@inlang/sdk2"
+import type { InlangProject, InlangPlugin } from "@inlang/sdk"
 
 /**
  * The state of the Visual Studio Code extension (Sherlock).

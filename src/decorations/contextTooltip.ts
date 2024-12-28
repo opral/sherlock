@@ -3,7 +3,7 @@ import { state } from "../utilities/state.js"
 import { getStringFromPattern } from "../utilities/messages/query.js"
 import { INTERPOLATE } from "../configuration.js"
 import { escapeHtml } from "../utilities/utils.js"
-import { type IdeExtensionConfig } from "@inlang/sdk2"
+import { type IdeExtensionConfig } from "@inlang/sdk"
 import { getSelectedBundleByBundleIdOrAlias } from "../utilities/helper.js"
 
 const MISSING_TRANSLATION_MESSAGE = "[missing]"

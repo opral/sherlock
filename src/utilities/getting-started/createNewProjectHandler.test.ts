@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, type Mock } from "vitest"
 import { createNewProjectHandler } from "./createNewProjectHandler.js"
 import * as vscode from "vscode"
-import { newProject, loadProjectInMemory, saveProjectToDirectory } from "@inlang/sdk2"
+import { newProject, loadProjectInMemory, saveProjectToDirectory } from "@inlang/sdk"
 
 vi.mock("vscode", () => ({
 	commands: {
@@ -17,7 +17,7 @@ vi.mock("vscode", () => ({
 	},
 }))
 
-vi.mock("@inlang/sdk2", () => ({
+vi.mock("@inlang/sdk", () => ({
 	newProject: vi.fn().mockResolvedValue({}), // Mocking the project blob
 	loadProjectInMemory: vi.fn().mockResolvedValue({}), // Mocking the project in memory
 	saveProjectToDirectory: vi.fn().mockResolvedValue(undefined), // Mocking saveProjectToDirectory

@@ -3,7 +3,7 @@ import { msg } from "../utilities/messages/msg.js"
 import { commands, window } from "vscode"
 import { getPatternFromString, getStringFromPattern } from "../utilities/messages/query.js"
 import { CONFIGURATION } from "../configuration.js"
-import { type Bundle } from "@inlang/sdk2"
+import { type Bundle } from "@inlang/sdk"
 import { getSelectedBundleByBundleIdOrAlias } from "../utilities/helper.js"
 
 export const editMessageCommand = {
