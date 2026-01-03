@@ -1,0 +1,6 @@
+packages:
+  - "."
+  - "src/utilities/editor/sherlock-editor-app"
+  - "submodule/inlang"
+  - "submodule/inlang/packages/**"
+  - "!submodule/inlang/packages/**/dist"

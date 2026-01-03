@@ -253,7 +253,10 @@
 	},
 	"scripts": {
 		"build": "pnpm run editor:build && node ./build.js",
+		"prebuild": "pnpm run build:inlang",
+		"postinstall": "pnpm -C submodule/inlang install",
 		"dev": "DEV=true node ./build.js",
+		"build:inlang": "pnpm -C submodule/inlang install && pnpm -C submodule/inlang exec nx run-many --nx-bail --target=build --projects=@inlang/sdk,@inlang/editor-component,@inlang/rpc,@inlang/recommend-sherlock",
 		"package": "pnpm vsce package --no-dependencies",
 		"publish": "pnpm vsce publish --no-dependencies",
 		"publish:open-vsx": "node --experimental-json-modules publish-openvsx.js",
