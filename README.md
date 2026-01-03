@@ -1,4 +1,4 @@
-# Sherlock – i18n inspector for Visual Studio Code
+# Sherlock – i18n extension for Visual Studio Code
 
 <p>
 <a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/v/inlang.vs-code-extension?color=1E90FF&label=VS%20Code%20Marketplace&logo=visual-studio-code" alt="Visual Studio Marketplace Version" /></a>
