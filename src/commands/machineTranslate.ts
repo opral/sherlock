@@ -55,11 +55,18 @@ export const machineTranslateMessageCommand = {
 					locale: updatedMessage.locale,
 					selectors: updatedMessage.selectors,
 				})
+				.onConflict((oc) =>
+					oc.column("id").doUpdateSet({
+						bundleId: updatedMessage.bundleId,
+						locale: updatedMessage.locale,
+						selectors: updatedMessage.selectors,
+					})
+				)
 				.execute()
 		}
 
 		// Emit event to notify that messages were edited
-		CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire({ origin: "command:machineTranslate" })
+		CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire()
 
 		// Return success message
 		return msg("Messages translated.")

@@ -12,9 +12,8 @@ import { deleteVariant } from "./helper/deleteVariant.js"
 import { deleteBundleNested } from "./helper/deleteBundleNested.js"
 import { handleUpdateBundle } from "./helper/handleBundleUpdate.js"
 import { createMessage } from "./helper/createMessage.js"
-import { rpc } from "@inlang/rpc"
-import { logger } from "../logger.js"
 import { saveProject } from "../../main.js"
+import { rpc } from "@inlang/rpc"
 
 // Same interface as before
 export interface UpdateBundleMessage {
@@ -41,7 +40,6 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
 	let panel: WebviewPanel | undefined
 	let disposables: Disposable[] = []
 	let bundleId = initialBundleId
-	let suppressEditorRefreshUntil = 0
 
 	/**
 	 * Opens a new panel if none is open, otherwise reveals the existing one.
@@ -141,7 +139,6 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
 					updateView()
 					return
 				case "change":
-					suppressEditorRefreshUntil = Date.now() + 500
 					await handleUpdateBundle({
 						db: state().project?.db,
 						message,
@@ -245,20 +242,8 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
 	 * Update view
 	 */
 	async function updateView() {
-		CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire({ origin: "editorView" })
+		CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire()
 		CONFIGURATION.EVENTS.ON_DID_EDITOR_VIEW_CHANGE.fire()
-
-		const shouldSkipRefresh = suppressEditorRefreshUntil > Date.now()
-		try {
-			await saveProject()
-		} catch (error) {
-			logger.error("Failed to save project", error)
-		}
-
-		if (shouldSkipRefresh) {
-			logger.debug("Skipping editor webview refresh due to recent local edit")
-			return
-		}
 
 		panel?.webview.postMessage({
 			command: "change",
@@ -267,6 +252,16 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
 				settings: await state().project?.settings.get(),
 			},
 		})
+
+		const workspaceFolder = vscode.workspace.workspaceFolders![0]
+		if (workspaceFolder) {
+			try {
+				await saveProject()
+			} catch (error) {
+				console.error("Failed to save project", error)
+				msg(`Failed to save project. ${String(error)}`, "error")
+			}
+		}
 	}
 
 	/**
@@ -292,12 +287,26 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
 
 		const csp = [
 			`default-src 'none';`,
+
+			// Allow scripts from safe sources
 			`script-src 'self' https://* 'nonce-${nonce}';`,
+
+			// Allow inline styles for better compatibility
 			`style-src ${webview.cspSource} 'self' 'unsafe-inline' https://*;`,
+
+			// Allow fonts from safe sources
 			`font-src ${webview.cspSource} https://*;`,
+
+			// Allow images from trusted sources and `data:` URLs
 			`img-src ${webview.cspSource} https://* data:;`,
+
+			// Allow media from safe sources (if needed)
 			`media-src ${webview.cspSource} https://* data:;`,
-			`connect-src https://* http://localhost:3000 data: ;`,
+
+			// Allow connections to APIs, WebSockets, and data URIs - include http://localhost:3000 for RPC
+			`connect-src https://* http://localhost:3000 data:;`,
+
+			// Allow iframes only from trusted sources
 			`frame-src 'self' https://*;`,
 		].join(" ")
 
@@ -312,7 +321,7 @@ export function editorView(args: { context: vscode.ExtensionContext; initialBund
       </head>
       <body>
         <div id="root"></div>
-        <script type="module" src="${scriptUri}" nonce="${nonce}"></script>
+        <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
       </body>
     </html>`
 	}

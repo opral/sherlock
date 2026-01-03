@@ -40,8 +40,9 @@ vi.mock("@inlang/sdk", () => ({
 	loadProjectFromDirectory: vi.fn(),
 }))
 
-vi.mock("../state.js", () => {
-	const mockStateValue = {
+vi.mock("../state.js", () => ({
+	setState: vi.fn(),
+	state: vi.fn(() => ({
 		projectsInWorkspace: [
 			{
 				label: "to/project1",
@@ -57,16 +58,8 @@ vi.mock("../state.js", () => {
 			},
 		],
 		selectedProjectPath: "",
-	}
-
-	const setStateMock = vi.fn()
-	const stateFn = vi.fn(() => mockStateValue)
-	return {
-		setState: setStateMock,
-		state: stateFn,
-		safeState: stateFn,
-	}
-})
+	})),
+}))
 
 vi.mock("../../configuration.js", () => ({
 	CONFIGURATION: {

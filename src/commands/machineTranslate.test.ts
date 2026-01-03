@@ -14,7 +14,6 @@ vi.mock("vscode", () => ({
 		Right: 2,
 	},
 	window: {
-		createOutputChannel: vi.fn(),
 		createStatusBarItem: vi.fn(() => ({
 			show: vi.fn(),
 			text: "",
@@ -47,17 +46,13 @@ vi.mock("../utilities/messages/query.js", () => ({
 	getStringFromPattern: vi.fn(),
 }))
 
-vi.mock("../utilities/state", () => {
-	const stateFn = vi.fn(() => ({
+vi.mock("../utilities/state", () => ({
+	state: vi.fn(() => ({
 		project: {
 			db: {},
 		},
-	}))
-	return {
-		state: stateFn,
-		safeState: stateFn,
-	}
-})
+	})),
+}))
 
 vi.mock("@inlang/sdk", () => ({
 	selectBundleNested: vi.fn(),
@@ -184,8 +179,6 @@ describe("machineTranslateMessageCommand", () => {
 			targetLocales: ["es"],
 		})
 
-		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).toHaveBeenCalledWith({
-			origin: "command:machineTranslate",
-		})
+		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).toHaveBeenCalled()
 	})
 })

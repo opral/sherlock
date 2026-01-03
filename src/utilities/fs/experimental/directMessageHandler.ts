@@ -67,6 +67,7 @@ function throttledUIUpdate() {
 	isInEventLoop = true
 
 	// Fire the event
+	CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire()
 
 	// Reset the flag after a short delay
 	setTimeout(() => {
@@ -195,6 +196,7 @@ export async function setupDirectMessageWatcher(args: {
 				const oldHash = fileHashes.get(filePath)
 
 				// Skip only if content is identical AND not a delete event
+				// This ensures we always process user edits properly
 				if (newHash === oldHash && eventType !== "Deleted") {
 					console.log(`Skipping unchanged ${eventType}: ${filePath}`)
 					processingFiles.delete(filePath)
@@ -293,9 +295,11 @@ export async function setupDirectMessageWatcher(args: {
 								}
 							}
 
-							// If we made changes, make sure to update UI and save
+							// If deletions happened, refresh the UI to reflect them
 							if (madeChanges) {
 								console.log(`Made changes due to deleted keys, refreshing UI...`)
+
+								// Update UI with throttling for better performance
 								throttledUIUpdate()
 							}
 						}
@@ -332,15 +336,14 @@ export async function setupDirectMessageWatcher(args: {
 						// Clear all message keys for deleted files
 						fileMessageKeys.delete(filePath)
 
-						// If we made changes, make sure to update UI and save
+						// If deletions happened, refresh the UI to reflect them
 						if (madeChanges) {
-							// Save project
 							// Force update UI with throttling
 							throttledUIUpdate()
 						}
 					}
 
-					// Always update UI for genuine deletions with throttling
+					// Only update UI for genuine deletions with throttling
 					throttledUIUpdate()
 
 					// Record this update

@@ -5,9 +5,6 @@ import { openInFinkCommand } from "./openInFink.js"
 import { CONFIGURATION } from "../configuration.js"
 
 vi.mock("vscode", () => ({
-	window: {
-		createOutputChannel: vi.fn(),
-	},
 	workspace: {
 		getConfiguration: vi.fn().mockReturnValue({
 			get: vi.fn().mockReturnValue("test"),

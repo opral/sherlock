@@ -10,9 +10,6 @@ vi.mock("../services/telemetry/implementation.js", () => ({
 
 vi.mock("vscode", () => ({
 	version: "1.0.0",
-	window: {
-		createOutputChannel: vi.fn(),
-	},
 }))
 
 vi.mock("../../package.json", () => ({

@@ -15,10 +15,23 @@ export const logger = {
 	error: (message: string, ...details: unknown[]) => write("ERROR", message, details),
 }
 
-const outputChannel =
-	typeof vscode.window?.createOutputChannel === "function"
-		? vscode.window.createOutputChannel("Sherlock")
-		: undefined
+let outputChannel: vscode.OutputChannel | undefined
+
+function ensureOutputChannel() {
+	if (outputChannel) {
+		return outputChannel
+	}
+
+	try {
+		if (typeof (vscode as any)?.window?.createOutputChannel === "function") {
+			outputChannel = vscode.window.createOutputChannel("Sherlock")
+		}
+	} catch {
+		// Ignore errors when VS Code window is not available (e.g., during tests)
+	}
+
+	return outputChannel
+}
 
 const isTestEnvironment = (() => {
 	try {
@@ -45,9 +58,7 @@ function write(
 	const serializedDetails = serialize(details)
 	const entry = `[${timestamp}] [${level}] ${message}${serializedDetails ? ` ${serializedDetails}` : ""}`
 
-	if (outputChannel) {
-		outputChannel.appendLine(entry)
-	}
+	ensureOutputChannel()?.appendLine(entry)
 
 	if (isTestEnvironment) {
 		return
@@ -83,7 +94,7 @@ function serialize(details: unknown[]): string {
 
 			try {
 				return JSON.stringify(detail, null, 2)
-			} catch (error) {
+			} catch {
 				return String(detail)
 			}
 		})

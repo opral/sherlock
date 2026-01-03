@@ -35,13 +35,9 @@ vi.mock("vscode", () => ({
 }))
 
 // Mock the state module
-vi.mock("../state.js", () => {
-	const stateFn = vi.fn()
-	return {
-		state: stateFn,
-		safeState: stateFn,
-	}
-})
+vi.mock("../state.js", () => ({
+	state: vi.fn(),
+}))
 
 describe("error handling", () => {
 	beforeEach(() => {

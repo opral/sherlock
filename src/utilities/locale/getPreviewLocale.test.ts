@@ -3,20 +3,10 @@ import { getPreviewLocale } from "./getPreviewLocale.js"
 import { state } from "../state.js"
 import { getSetting } from "../settings/index.js"
 
-vi.mock("vscode", () => ({
-	window: {
-		createOutputChannel: vi.fn(),
-	},
-}))
-
 // Mock the external modules
-vi.mock("../state", () => {
-	const stateFn = vi.fn()
-	return {
-		state: stateFn,
-		safeState: stateFn,
-	}
-})
+vi.mock("../state", () => ({
+	state: vi.fn(),
+}))
 
 vi.mock("../settings/index", () => ({
 	getSetting: vi.fn(),

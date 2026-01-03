@@ -1,12 +1,11 @@
 import * as vscode from "vscode"
 import { MarkdownString, Uri } from "vscode"
-import { safeState } from "../utilities/state.js"
+import { state } from "../utilities/state.js"
 import { getStringFromPattern } from "../utilities/messages/query.js"
 import { INTERPOLATE } from "../configuration.js"
 import { escapeHtml } from "../utilities/utils.js"
 import { type IdeExtensionConfig } from "@inlang/sdk"
 import { getSelectedBundleByBundleIdOrAlias } from "../utilities/helper.js"
-import { logger } from "../utilities/logger.js"
 
 const MISSING_TRANSLATION_MESSAGE = "[missing]"
 
@@ -50,7 +49,7 @@ export async function contextTooltip(
 ) {
 	const context = vscode.extensions.getExtension("inlang.vs-code-extension")?.exports.context
 	if (!context) {
-		logger.error("Extension context is not available for context tooltip")
+		console.error("Extension context is not available.")
 		return
 	}
 
@@ -64,13 +63,7 @@ export async function contextTooltip(
 	}
 
 	// Get the configured language tags
-	const activeProject = safeState()?.project
-	if (!activeProject) {
-		logger.warn("Context tooltip requested without an active project")
-		return undefined
-	}
-
-	const configuredLanguageTags = (await activeProject.settings.get())?.locales || []
+	const configuredLanguageTags = (await state().project.settings.get())?.locales || []
 
 	// Generate rows for each configured language tag
 	const contextTableRows: ContextTableRow[] = await Promise.all(
@@ -103,7 +96,7 @@ export async function contextTooltip(
 					"MACHINE_TRANSLATE_MESSAGE",
 					JSON.stringify({
 						bundleId: referenceMessage.bundleId,
-						baseLocale: (await activeProject.settings.get())?.baseLocale,
+						baseLocale: (await state().project.settings.get())?.baseLocale,
 						targetLocales: [locale],
 					})
 				)

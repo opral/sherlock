@@ -3,9 +3,6 @@ import * as vscode from "vscode"
 import { openProjectCommand } from "./openProject.js"
 
 vi.mock("vscode", () => ({
-	window: {
-		createOutputChannel: vi.fn(),
-	},
 	commands: {
 		registerCommand: vi.fn(),
 	},

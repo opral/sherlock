@@ -65,10 +65,11 @@ export const editMessageCommand = {
 							pattern: variant.pattern,
 						})
 						.where("variant.id", "=", variant.id)
+						.returningAll()
 						.execute()
 				})
 
-			CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire({ origin: "command:editMessage" })
+			CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire()
 
 			return msg("Message updated.")
 		} catch (e) {

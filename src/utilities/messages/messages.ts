@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 import { isEqual } from "lodash-es"
-import { safeState } from "../state.js"
+import * as stateModule from "../state.js"
 import { CONFIGURATION } from "../../configuration.js"
 import { getStringFromPattern } from "./query.js"
 import { escapeHtml } from "../utils.js"
@@ -12,10 +12,16 @@ import {
 	type InlangProject,
 } from "@inlang/sdk"
 import { logger } from "../logger.js"
+import { pollQuery } from "../polling/pollQuery.js"
 
 // Store previous subscription state
 let subscription: { unsubscribe: () => void } | undefined
 let previousBundles: BundleNested[] | undefined
+
+const getSafeState =
+	"safeState" in stateModule && typeof (stateModule as any).safeState === "function"
+		? ((stateModule as any).safeState as typeof stateModule.state)
+		: stateModule.state
 
 export function createMessageWebviewProvider(args: {
 	workspaceFolder: vscode.WorkspaceFolder
@@ -31,11 +37,11 @@ export function createMessageWebviewProvider(args: {
 	let isProcessingUpdate = false
 
 	/**
-	 * Connects the message view to the live Lix observer for the selected project.
+	 * Connects the message view to a polling loop for the selected project.
 	 *
 	 * @param args.project - Active inlang project whose bundles should be streamed.
 	 * @param args.projectPath - Absolute path of the project; used to avoid redundant subscriptions.
-	 * @param args.force - Recreate the observer even if one is already active.
+	 * @param args.force - Recreate the polling subscription even if one is already active.
 	 *
 	 * @example
 	 * await subscribeToProjectBundles({
@@ -66,33 +72,28 @@ export function createMessageWebviewProvider(args: {
 		isLoading = true
 		void updateWebviewContent()
 
-		const query = selectBundleNested(args.project.db)
-		const observable = args.project.lix.observe(query)
+		const poller = pollQuery(async () => {
+			const query = selectBundleNested(args.project.db)
+			return (await query.execute()) as BundleNested[]
+		})
 
-		subscription = observable.subscribe({
-			next: (result) => {
-				const nextBundles = result as BundleNested[]
-				if (!isEqual(previousBundles, nextBundles)) {
-					logger.debug("Bundles updated via observe", {
-						count: nextBundles.length,
-					})
-					previousBundles = [...nextBundles]
-					bundles = nextBundles
-					isLoading = false
-					throttledUpdateWebviewContent()
-				}
-			},
-			error: (error) => {
-				logger.error("Observe subscription failed", error)
+		subscription = poller.subscribe((result) => {
+			const nextBundles = result as BundleNested[]
+			if (!isEqual(previousBundles, nextBundles)) {
+				logger.debug("Bundles updated via polling", {
+					count: nextBundles.length,
+				})
+				previousBundles = [...nextBundles]
+				bundles = nextBundles
 				isLoading = false
 				throttledUpdateWebviewContent()
-			},
+			}
 		})
 	}
 
 	const updateMessages = async () => {
 		logger.debug("Message view update requested")
-		const currentState = safeState()
+		const currentState = getSafeState()
 		const project = currentState?.project as InlangProject | undefined
 		if (!project) {
 			logger.warn("Skipping message update because no project is loaded")
@@ -135,7 +136,7 @@ export function createMessageWebviewProvider(args: {
 
 		isProcessingUpdate = true
 		logger.debug("Forcing immediate message refresh")
-		const project = safeState()?.project as InlangProject | undefined
+		const project = getSafeState()?.project as InlangProject | undefined
 		if (!project) {
 			logger.warn("Cannot force refresh when no project is loaded")
 			isProcessingUpdate = false
@@ -149,7 +150,7 @@ export function createMessageWebviewProvider(args: {
 				return
 			}
 
-			logger.debug("Forced refresh requested via observe")
+			logger.debug("Forced refresh requested via polling")
 			await subscribeToProjectBundles({
 				project,
 				projectPath: activeProjectPath,
@@ -193,7 +194,7 @@ export function createMessageWebviewProvider(args: {
 	const updateWebviewContent = async () => {
 		const activeEditor = vscode.window.activeTextEditor
 		const fileContent = activeEditor ? activeEditor.document.getText() : ""
-		const activeProject = safeState()?.project
+		const activeProject = getSafeState()?.project
 		if (!activeProject) {
 			logger.warn("Cannot update webview because project is undefined")
 			bundles = undefined
@@ -391,7 +392,7 @@ export async function createMessageHtml(args: {
 	})
 
 	// Find the relative path from the workspace/git root
-	const activeState = safeState()
+	const activeState = getSafeState()
 	const selectedProjectPath = activeState?.selectedProjectPath ?? ""
 	if (!selectedProjectPath) {
 		logger.warn("Unable to determine selected project path when rendering message HTML")
@@ -602,7 +603,7 @@ export async function getTranslationsTableHtml(args: {
 	bundle: BundleNested
 	workspaceFolder: vscode.WorkspaceFolder
 }): Promise<string> {
-	const activeProject = safeState()?.project
+	const activeProject = getSafeState()?.project
 	if (!activeProject) {
 		logger.warn("Unable to render translations table because project is undefined")
 		return '<div class="section"><span class="message">Project is still loading...</span></div>'

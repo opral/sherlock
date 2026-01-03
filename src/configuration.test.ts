@@ -4,9 +4,6 @@ import { CONFIGURATION } from "./configuration.js"
 
 vi.mock("vscode", () => {
 	return {
-		window: {
-			createOutputChannel: vi.fn(),
-		},
 		commands: vi.fn(),
 		EventEmitter: vi.fn(),
 		CodeActionKind: {

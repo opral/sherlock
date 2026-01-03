@@ -1,5 +1,4 @@
 import type { InlangProject, InlangPlugin } from "@inlang/sdk"
-import { logger } from "./logger.js"
 
 /**
  * The state of the Visual Studio Code extension (Sherlock).
@@ -24,12 +23,6 @@ export function setState(state: State) {
 	_state = state
 
 	if (state.project) proxyPluginGetMethod(state.project)
-
-	logger.debug("State updated", {
-		hasProject: Boolean(state.project),
-		selectedProjectPath: state.selectedProjectPath,
-		projectsInWorkspace: state.projectsInWorkspace?.length ?? 0,
-	})
 }
 
 /**
@@ -41,19 +34,16 @@ export function setState(state: State) {
  * State that is not reflected = endless bugs.
  */
 export function state(): State {
-	if (_state === undefined) {
-		logger.warn("State accessed before initialization")
-	}
 	return _state
 }
 
 /**
- * Returns the current state without mutating the access pattern.
+ * Returns the current state without throwing if it hasn't been initialized yet.
  *
  * @example
  * const currentState = safeState()
  * if (!currentState) {
- *   logger.warn("Sherlock state unavailable")
+ *   // state is not ready yet
  * }
  */
 export function safeState(): State | undefined {

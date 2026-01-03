@@ -12,9 +12,6 @@ import * as vscode from "vscode"
 
 // mock vscode
 vi.mock("vscode", () => ({
-	window: {
-		createOutputChannel: vi.fn(),
-	},
 	DiagnosticSeverity: {
 		Error: 1,
 		Warning: 2,
@@ -24,13 +21,9 @@ vi.mock("vscode", () => ({
 }))
 
 // Mocking necessary utilities
-vi.mock("../utilities/state.js", () => {
-	const stateFn = vi.fn()
-	return {
-		state: stateFn,
-		safeState: stateFn,
-	}
-})
+vi.mock("../utilities/state.js", () => ({
+	state: vi.fn(),
+}))
 
 vi.mock("../utilities/lint-rules/lintRules.js", () => ({
 	missingMessage: vi.fn(() => Promise.resolve([])),

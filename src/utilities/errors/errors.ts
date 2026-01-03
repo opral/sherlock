@@ -1,7 +1,6 @@
 import * as vscode from "vscode"
-import { safeState, state } from "../state.js"
+import { state } from "../state.js"
 import { CONFIGURATION } from "../../configuration.js"
-import { logger } from "../logger.js"
 
 export interface ErrorNode {
 	label: string
@@ -33,15 +32,11 @@ export function createErrorNode(error: Error | 0 | undefined): ErrorNode {
 }
 
 export async function createErrorNodes(): Promise<ErrorNode[]> {
-	const currentState = safeState()
-	if (!currentState?.project) {
-		logger.warn("Requested error nodes without a loaded project")
+	const errors = ((await state().project.errors.get()) as Error[]) || []
+	if (state().project === undefined) {
 		// no project
 		return [createErrorNode(undefined)]
-	}
-
-	const errors = ((await currentState.project.errors.get()) as Error[]) || []
-	if (errors.length === 0) {
+	} else if (errors.length === 0) {
 		// no errors
 		return [createErrorNode(0)]
 	}

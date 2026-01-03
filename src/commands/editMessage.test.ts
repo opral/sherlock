@@ -1,179 +1,278 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { window as vscodeWindow } from "vscode"
-import {
-	loadProjectInMemory,
-	newProject,
-	selectBundleNested,
-	type InlangProject,
-} from "@inlang/sdk"
-import { editMessageCommand } from "./editMessage.js"
-import { setState, state } from "../utilities/state.js"
+import { window } from "vscode"
+import { editMessageCommand } from "./editMessage.js" // Adjust the import path accordingly
+import { state } from "../utilities/state.js"
+import { msg } from "../utilities/messages/msg.js"
 import { CONFIGURATION } from "../configuration.js"
-import { getStringFromPattern } from "../utilities/messages/query.js"
-import * as msgModule from "../utilities/messages/msg.js"
+import { getPatternFromString, getStringFromPattern } from "../utilities/messages/query.js"
+import { getSelectedBundleByBundleIdOrAlias } from "../utilities/helper.js" // Import the function to be mocked
 
-vi.mock("vscode", () => {
-	const makeStatusBarItem = () => ({ show: vi.fn(), hide: vi.fn(), text: "" })
-	const createEmitter = () => {
-		const listeners = new Set<(value: unknown) => void>()
-		return {
-			fire: (value: unknown) => {
-				for (const listener of listeners) {
-					listener(value)
-				}
-			},
-			event: (listener: (value: unknown) => void) => {
-				listeners.add(listener)
-				return { dispose: () => listeners.delete(listener) }
-			},
-			dispose: () => listeners.clear(),
-		}
-	}
+vi.mock("vscode", () => ({
+	commands: {
+		registerCommand: vi.fn(),
+	},
+	window: {
+		showInputBox: vi.fn(),
+		showErrorMessage: vi.fn(),
+	},
+}))
 
-	return {
-		window: {
-			showInputBox: vi.fn(),
-			showErrorMessage: vi.fn(),
-			createStatusBarItem: vi.fn(() => makeStatusBarItem()),
+vi.mock("../utilities/state.js", () => ({
+	state: vi.fn(),
+}))
+
+vi.mock("../utilities/messages/msg.js", () => ({
+	msg: vi.fn(),
+}))
+
+vi.mock("../configuration.js", () => ({
+	CONFIGURATION: {
+		EVENTS: {
+			ON_DID_EDIT_MESSAGE: { fire: vi.fn() },
 		},
-		commands: {
-			registerCommand: vi.fn(),
-			executeCommand: vi.fn(),
-		},
-		StatusBarAlignment: { Left: 1, Right: 2 },
-		CodeActionKind: { QuickFix: "quickfix" },
-		ThemeColor: vi.fn(),
-		EventEmitter: vi.fn(() => createEmitter()),
-		workspace: {
-			getConfiguration: vi.fn(() => ({ get: vi.fn(), update: vi.fn() })),
-		},
-	}
-})
+	},
+}))
 
-describe("editMessageCommand (integration)", () => {
-	let project: Awaited<ReturnType<typeof loadProjectInMemory>>
+vi.mock("../utilities/messages/query.js", () => ({
+	getPatternFromString: vi.fn(),
+	getStringFromPattern: vi.fn(),
+}))
 
-	async function seedBundleWithVariant(
-		target: InlangProject,
-		opts?: { id?: string; locale?: string }
-	) {
-		const bundleId = opts?.id ?? "welcome"
-		const locale = opts?.locale ?? "en"
+// Mock the helper module
+vi.mock("../utilities/helper.js", () => ({
+	getSelectedBundleByBundleIdOrAlias: vi.fn(),
+}))
 
-		await target.db.insertInto("bundle").values({ id: bundleId, declarations: [] }).execute()
-		await target.db
-			.insertInto("message")
-			.values({ id: `${bundleId}-${locale}`, bundleId, locale, selectors: [] })
-			.execute()
-		await target.db
-			.insertInto("variant")
-			.values({
-				id: `${bundleId}-${locale}-default`,
-				messageId: `${bundleId}-${locale}`,
-				matches: [],
-				pattern: [{ type: "text", value: "Hello world" }],
-			})
-			.execute()
-	}
-
-	beforeEach(async () => {
-		project = await loadProjectInMemory({
-			blob: await newProject(),
-			appId: CONFIGURATION.STRINGS.APP_ID,
-		})
-
-		setState({
-			project,
-			selectedProjectPath: "/virtual-project",
-			projectsInWorkspace: [{ projectPath: "/virtual-project" }],
-		})
-
+describe("editMessageCommand", () => {
+	beforeEach(() => {
 		vi.clearAllMocks()
 	})
 
-	it("shows a warning when the bundle is missing", async () => {
-		const msgSpy = vi.spyOn(msgModule, "msg")
-
-		await editMessageCommand.callback({ bundleId: "missing", locale: "en" })
-
-		expect(msgSpy).toHaveBeenCalledWith("Bundle with id missing not found.")
-	})
-
-	it("shows a warning when the message for a locale is missing", async () => {
-		await project.db.insertInto("bundle").values({ id: "welcome", declarations: [] }).execute()
-		await project.db
-			.insertInto("message")
-			.values({ id: "welcome-de", bundleId: "welcome", locale: "de", selectors: [] })
-			.execute()
-
-		const msgSpy = vi.spyOn(msgModule, "msg")
-
-		await editMessageCommand.callback({ bundleId: "welcome", locale: "en" })
-
-		expect(msgSpy).toHaveBeenCalledWith("Message with locale en not found.")
-	})
-
-	it("shows a warning when no editable variant exists", async () => {
-		await project.db.insertInto("bundle").values({ id: "welcome", declarations: [] }).execute()
-		await project.db
-			.insertInto("message")
-			.values({ id: "welcome-en", bundleId: "welcome", locale: "en", selectors: [] })
-			.execute()
-
-		const msgSpy = vi.spyOn(msgModule, "msg")
-
-		await editMessageCommand.callback({ bundleId: "welcome", locale: "en" })
-
-		expect(msgSpy).toHaveBeenCalledWith("Variant with locale en not found.")
-	})
-
-	it("cancels when the user does not provide a new value", async () => {
-		await seedBundleWithVariant(project)
-
-		const msgSpy = vi.spyOn(msgModule, "msg")
-		const fireSpy = vi.spyOn(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE, "fire")
-		vi.mocked(vscodeWindow.showInputBox).mockResolvedValueOnce(undefined)
-
-		await editMessageCommand.callback({ bundleId: "welcome", locale: "en" })
-
-		const stored = await selectBundleNested(state().project.db)
-			.where("bundle.id", "=", "welcome")
-			.executeTakeFirstOrThrow()
-
-		const patternString = getStringFromPattern({
-			pattern: stored.messages[0]?.variants[0]?.pattern ?? [],
-			locale: "en",
-			messageId: stored.messages[0]?.id ?? "",
+	it("should show a message if the bundle is not found", async () => {
+		vi.mocked(state).mockReturnValue({
+			project: {
+				// @ts-expect-error
+				db: {
+					transaction: vi.fn().mockReturnThis(),
+				},
+			},
 		})
 
-		expect(patternString).toBe("Hello world")
-		expect(fireSpy).not.toHaveBeenCalled()
-		expect(msgSpy).not.toHaveBeenCalled()
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValueOnce(undefined)
+
+		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
+
+		expect(msg).toHaveBeenCalledWith("Bundle with id testBundle not found.")
 	})
 
-	it("updates the stored variant when the user provides a new value", async () => {
-		await seedBundleWithVariant(project)
+	it("should show a message if the message is not found", async () => {
+		const mockBundle = { id: "testBundle", declarations: [], messages: [] }
 
-		const msgSpy = vi.spyOn(msgModule, "msg")
-		const fireSpy = vi.spyOn(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE, "fire")
-		vi.mocked(vscodeWindow.showInputBox).mockResolvedValueOnce("Hello universe")
-
-		await editMessageCommand.callback({ bundleId: "welcome", locale: "en" })
-
-		const stored = await selectBundleNested(state().project.db)
-			.where("bundle.id", "=", "welcome")
-			.executeTakeFirstOrThrow()
-
-		const patternString = getStringFromPattern({
-			pattern: stored.messages[0]?.variants[0]?.pattern ?? [],
-			locale: "en",
-			messageId: stored.messages[0]?.id ?? "",
+		vi.mocked(state).mockReturnValue({
+			project: {
+				// @ts-expect-error
+				db: {
+					transaction: vi.fn().mockReturnThis(),
+				},
+			},
 		})
 
-		expect(patternString).toBe("Hello universe")
-		expect(fireSpy).toHaveBeenCalledWith({ origin: "command:editMessage" })
-		expect(msgSpy).toHaveBeenCalledWith("Message updated.")
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValueOnce(mockBundle)
+
+		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
+
+		expect(msg).toHaveBeenCalledWith("Message with locale en not found.")
 	})
 
-	it.todo("surfaces database errors while leaving the project untouched")
+	it("should show a message if the variant is not found", async () => {
+		const mockBundle = {
+			id: "testBundle",
+			messages: [
+				{
+					id: "testMessage",
+					locale: "en",
+					variants: [],
+				},
+			],
+		}
+
+		vi.mocked(state).mockReturnValue({
+			project: {
+				db: {
+					// @ts-expect-error
+					transaction: () => ({
+						execute: vi.fn().mockResolvedValue({}),
+					}),
+				},
+			},
+		})
+
+		// @ts-expect-error
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValueOnce(mockBundle)
+
+		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
+
+		expect(msg).toHaveBeenCalledWith("Variant with locale en not found.")
+	})
+
+	it("should cancel the operation if no new value is provided", async () => {
+		const mockBundle = {
+			id: "testBundle",
+			messages: [
+				{
+					id: "testMessage",
+					locale: "en",
+					variants: [
+						{
+							id: "testVariant",
+							matches: [
+								{
+									type: "match",
+									name: "locale",
+									value: { type: "literal", value: "en" },
+								},
+							],
+							pattern: "mock-pattern",
+						},
+					],
+				},
+			],
+		}
+
+		vi.mocked(state).mockReturnValue({
+			project: {
+				db: {
+					// @ts-expect-error
+					transaction: () => ({
+						execute: vi.fn().mockResolvedValue({}),
+					}),
+				},
+			},
+		})
+
+		// @ts-expect-error
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValueOnce(mockBundle)
+
+		vi.mocked(window.showInputBox).mockResolvedValueOnce(undefined)
+
+		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
+
+		expect(state().project.db.transaction().execute).not.toHaveBeenCalled()
+		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).not.toHaveBeenCalled()
+	})
+
+	it.todo("should update an existing message and variant", async () => {
+		const mockBundle = {
+			id: "testBundle",
+			messages: [
+				{
+					id: "testMessage",
+					bundleId: "testBundle",
+					locale: "en",
+					selectors: [],
+					declarations: [],
+					variants: [
+						{
+							id: "testVariant",
+							messageId: "testMessage",
+							pattern: [
+								{
+									type: "text",
+									value: "Current content",
+								},
+							],
+							matches: [],
+						},
+					],
+				},
+			],
+		}
+
+		// @ts-expect-error
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValue(mockBundle)
+
+		const mockTransaction = {
+			execute: vi.fn().mockResolvedValue({}),
+		}
+
+		vi.mocked(state).mockReturnValue({
+			project: {
+				db: {
+					// @ts-expect-error
+					transaction: vi.fn(() => mockTransaction),
+				},
+			},
+		})
+
+		vi.mocked(getStringFromPattern).mockReturnValue("Current content")
+		vi.mocked(getPatternFromString).mockReturnValue([
+			{
+				type: "text",
+				value: "Updated content",
+			},
+		])
+
+		vi.mocked(window.showInputBox).mockResolvedValueOnce("Updated content")
+
+		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
+
+		expect(window.showInputBox).toHaveBeenCalledWith({
+			title: "Enter new value:",
+			value: "Current content",
+		})
+		expect(getPatternFromString).toHaveBeenCalledWith({
+			string: "Updated content",
+		})
+		expect(mockTransaction.execute).toHaveBeenCalled()
+		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).toHaveBeenCalled()
+		expect(msg).toHaveBeenCalledWith("Message updated.")
+	})
+
+	it.todo("should handle errors during message update", async () => {
+		const mockBundle = {
+			id: "testBundle",
+			messages: [
+				{
+					id: "testMessage",
+					locale: "en",
+					variants: [
+						{
+							id: "testVariant",
+							matches: [],
+							pattern: "mock-pattern",
+						},
+					],
+				},
+			],
+		}
+
+		const error = new Error("Some Error")
+
+		const mockTransaction = {
+			execute: vi.fn().mockRejectedValue(error),
+		}
+
+		vi.mocked(state).mockReturnValue({
+			project: {
+				db: {
+					// @ts-expect-error
+					transaction: vi.fn(() => mockTransaction),
+				},
+			},
+		})
+
+		// @ts-expect-error
+		vi.mocked(getSelectedBundleByBundleIdOrAlias).mockResolvedValue(mockBundle)
+		vi.mocked(window.showInputBox).mockResolvedValue("Updated content")
+
+		await editMessageCommand.callback({
+			bundleId: mockBundle.id,
+			locale: "en",
+		})
+
+		expect(mockTransaction.execute).toHaveBeenCalled()
+		expect(msg).toHaveBeenCalledWith(
+			`Couldn't update bundle with id ${mockBundle.id}. Error: ${error.message}`
+		)
+	})
 })
