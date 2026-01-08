@@ -22,13 +22,13 @@
 
   ### Per-file filesystem sync
 
-  Any inlang-based tooling that opens a project from disk (IDE extensions, CLIs, custom apps) used to patch the entire locale tree whenever a single message changed. That behaviour is at the heart of [opral/inlang-sherlock#173](https://github.com/opral/inlang-sherlock/issues/173) where editing one key in `en.json` would re-export every other locale file, destroying manual formatting or reintroducing stale content.
+  Any inlang-based tooling that opens a project from disk (IDE extensions, CLIs, custom apps) used to patch the entire locale tree whenever a single message changed. That behaviour is at the heart of [opral/sherlock#173](https://github.com/opral/sherlock/issues/173) where editing one key in `en.json` would re-export every other locale file, destroying manual formatting or reintroducing stale content.
 
   Thanks to Lix v0.5’s observable state and writer-key APIs we can now react to per-commit metadata and suppress our own writes. When `happy_elephant` in `en.json` is updated, the SDK marks only `en.json` as dirty, leaving `de.json` and friends untouched. Drift is still possible if another tool rewrites `en.json`, yet the blast radius falls from “the whole project just changed” to “only the file you touched,” making reviews and merges manageable across all inlang integrations.
 
 ### Patch Changes
 
-- 7b46e1f: Stop reading and persisting Lix account snapshots so Sherlock can load projects without triggering the `/name must be string` schema error. Should close https://github.com/opral/inlang-sherlock/issues/188
+- 7b46e1f: Stop reading and persisting Lix account snapshots so Sherlock can load projects without triggering the `/name must be string` schema error. Should close https://github.com/opral/sherlock/issues/188
 - Updated dependencies [7791be7]
   - @inlang/sdk@3.0.0
   - @inlang/rpc@0.3.52
