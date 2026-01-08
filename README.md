@@ -1,34 +1,34 @@
-# Sherlock – i18n inspector for Visual Studio Code
+---
+imports:
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-hero.js
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-features.js
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-comments.js
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-feature.js
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-comment.js
+  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-proof.js
+---
+
+# Sherlock – i18n extension for Visual Studio Code
 
 <p>
-<a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/v/inlang.vs-code-extension?color=1E90FF&label=VS%20Code%20Marketplace&logo=visual-studio-code" alt="Visual Studio Marketplace Version" /></a>
 <a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/d/inlang.vs-code-extension?color=32CD32" alt="Visual Studio Marketplace Downloads" /></a>
 <a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/i/inlang.vs-code-extension?color=3CB371" alt="Visual Studio Marketplace Installs" /></a>
-<br/>
-<a href="https://github.com/opral/monorepo" target="__blank"><img src="https://img.shields.io/github/last-commit/opral/monorepo?color=9370DB" alt="GitHub last commit" /></a>
-<a href="https://github.com/opral/inlang-sherlock/issues" target="__blank"><img src="https://img.shields.io/github/issues/opral/inlang-sherlock?color=20B2AA" alt="GitHub issues" /></a>
-<a href="https://github.com/opral/monorepo" target="__blank"><img alt="GitHub stars" src="https://img.shields.io/github/stars/opral/monorepo?style=social"></a>
+<a href="https://github.com/opral/sherlock/issues" target="__blank"><img src="https://img.shields.io/github/issues/opral/sherlock?color=20B2AA" alt="GitHub issues" /></a>
+<a href="https://github.com/opral/sherlock" target="__blank"><img alt="GitHub stars" src="https://img.shields.io/github/stars/opral/sherlock?style=social"></a>
 </p>
+
+[![Inlang-ecosystem compatibility badge](https://cdn.jsdelivr.net/gh/opral/inlang@main/assets/md-badges/inlang.svg)](https://inlang.com)
 
 Visualize, edit, and lint translated strings effortlessly using Inline Decorations & Hover Support. Extract new strings with a simple click, making localization tasks more intuitive and efficient.
 
-<div>
-	<p>
-		<br>
-		<a href='https://inlang.com/c/apps' target="_blank">🕹️ Other i18n Apps</a>
-		·
-		<a href='https://inlang.com/m/r7kp499g' target="_blank">📄 Docs</a>
-		·
-		<a href='https://discord.gg/gdMPPWy57R' target="_blank">💙 Discord</a>
-		·
-		<a href='https://twitter.com/inlangHQ' target="_blank">🐦 Twitter</a>
-	</p>
-	<br />
-</div>
+[<img width="256px" height="auto" alt="Visual Studio Code install badge" src="https://cdn.jsdelivr.net/gh/opral/sherlock@latest/assets/vscode-install-badge.svg" />](https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension)
 
-<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/sherlock-cover-small.png"/>
+<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-cover-small.png"/>
 
-<br>
+#### Used by developers from:
+
+<doc-proof organisations="calcom, appflowy, openassistant, listmonk, jitsi"></doc-proof>
+
 <br>
 
 ✅ Streamline the i18n translation process.
@@ -41,7 +41,7 @@ Visualize, edit, and lint translated strings effortlessly using Inline Decoratio
 
 # Quick start
 
-<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/sherlock-start.png"/>
+<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-start.png"/>
 
 Install the extension and click `Getting Started` in the `Sherlock Tab`.
 
@@ -94,12 +94,18 @@ If you want to add lint rules to your experience, you can add them from https://
 
 See translations and edit them directly in your code. No more back-and-forth looking into the translation files themselves.
 
+<doc-features>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Inline Annotations" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-inline-small.png"></doc-feature>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Lint messages" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-lint-small.png"></doc-feature>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Extract Messages" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-extract-small.png"></doc-feature>
+</doc-features>
+
 <br>
 
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/ide-inline.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-inline.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">🔎 Inline Annotations</p>
@@ -113,7 +119,7 @@ See translations and edit them directly in your code. No more back-and-forth loo
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/ide-extract.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-extract.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">✂️ Extract Messages (translations)</p>
@@ -127,7 +133,7 @@ See translations and edit them directly in your code. No more back-and-forth loo
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/ide-lint.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/ide-lint.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">❌ Message Linting</p>
@@ -140,10 +146,20 @@ See translations and edit them directly in your code. No more back-and-forth loo
 
 ## Sherlock tab - Transparent & Fast
 
+You can have multiple projects in your repository. By using the Sherlock tab, it's easy to switch between projects. Whenever you change the source text, translations from the resource files will be automatically updated. Additionally, the tab menu provides a quick overview of any project errors in the setup.
+
+<doc-features>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Monorepo support" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-monorepo.png"></doc-feature>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Update Translations" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-update.png"></doc-feature>
+  <doc-feature text-color="#000000" color="#F7FAFC" title="Transparent Errors" image="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-errors.png"></doc-feature>
+</doc-features>
+
+<br>
+
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/sherlock-monorepo.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-monorepo.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">📦 Monorepo support</p>
@@ -157,7 +173,7 @@ See translations and edit them directly in your code. No more back-and-forth loo
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/sherlock-update.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-update.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">🔁 Update Translations</p>
@@ -171,7 +187,7 @@ See translations and edit them directly in your code. No more back-and-forth loo
 <div>
 	<div class="flex-container">
 		<div class="flex-item">
-			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/sherlock-errors.png"/>
+			<img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-errors.png"/>
 		</div>
 		<div class="flex-item">
 			<p class="bold">⚠ Transparent Errors</p>
@@ -240,18 +256,18 @@ You can disable the automatic generation of human IDs by setting the following p
 "sherlock.extract.autoHumanId.enabled": false
 ```
 
-> [!NOTE]  
+> [!NOTE]
 > Tip: It's best practice to use random names for your messages. Read this [guide](https://inlang.com/documentation/concept/message#idhuman-readable) for more information.
 
 #### Troubleshooting
 
 If you are having trouble with the **loading icon** not disappearing, this is a known issue & we are working with Visual Studio Code to fix it. In the meantime, you can right-click the Inlang icon to hide it:
 
-<img width="25%" src="https://cdn.jsdelivr.net/gh/opral/monorepo/inlang/packages/sherlock/assets/hide-badge.png"/>
+<img width="25%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/hide-badge.png"/>
 
 ## Support: Join our Discord / Open an issue on GitHub!
 
-If something isn't working as expected or you have a feature suggestion, please join our [Discord](https://discord.gg/CNPfhWpcAa) or [create an issue](<[https](https://github.com/opral/monorepo/issues/new/choose)>). We are happy to help!
+If something isn't working as expected or you have a feature suggestion, please join our [Discord](https://discord.gg/gdMPPWy57R) or [create an issue](https://github.com/opral/sherlock/issues/new/choose). We are happy to help!
 
 <style>
 .flex-container {

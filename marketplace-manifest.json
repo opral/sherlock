@@ -16,7 +16,7 @@
 	},
 	"pages": {
 		"": {
-			"/": "./MARKETPLACE.md",
+			"/": "./README.md",
 			"/changelog": "./CHANGELOG.md"
 		},
 		"Getting Started": {
@@ -45,6 +45,7 @@
 	"publisherName": "inlang",
 	"publisherIcon": "https://inlang.com/favicon/safari-pinned-tab.svg",
 	"website": "https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension",
-	"license": "Fair Core License, Version 1.0, MIT Future License",
+	"repository": "https://github.com/opral/sherlock",
+	"license": "MIT",
 	"pricing": "Free"
 }
