@@ -5,7 +5,6 @@ imports:
   - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-comments.js
   - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-feature.js
   - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-comment.js
-  - https://cdn.jsdelivr.net/npm/@opral/markdown-wc-doc-elements/dist/doc-proof.js
 ---
 
 # Sherlock – i18n extension for Visual Studio Code
@@ -24,12 +23,6 @@ Visualize, edit, and lint translated strings effortlessly using Inline Decoratio
 [<img width="256px" height="auto" alt="Visual Studio Code install badge" src="https://cdn.jsdelivr.net/gh/opral/sherlock@latest/assets/vscode-install-badge.svg" />](https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension)
 
 <img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-cover-small.png"/>
-
-#### Used by developers from:
-
-<doc-proof organisations="calcom, appflowy, openassistant, listmonk, jitsi"></doc-proof>
-
-<br>
 
 ✅ Streamline the i18n translation process.
 
