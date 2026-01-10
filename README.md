@@ -18,7 +18,6 @@ imports:
 <a href="https://github.com/opral/sherlock" target="__blank"><img alt="GitHub stars" src="https://img.shields.io/github/stars/opral/sherlock?style=social"></a>
 </p>
 
-[![Inlang-ecosystem compatibility badge](https://cdn.jsdelivr.net/gh/opral/inlang@main/assets/md-badges/inlang.svg)](https://inlang.com)
 
 Visualize, edit, and lint translated strings effortlessly using Inline Decorations & Hover Support. Extract new strings with a simple click, making localization tasks more intuitive and efficient.
 
