@@ -9,35 +9,7 @@ on:
       - main
 
 jobs:
-  version-check:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    outputs:
-      version_changed: ${{ steps.check.outputs.version_changed }}
-    steps:
-      - name: Checkout project
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect version bump
-        id: check
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version_changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          new_version=$(node -p "require('./package.json').version")
-          old_version=$(node -e "const {execSync}=require('child_process');try{process.stdout.write(JSON.parse(execSync('git show ${{ github.event.before }}:package.json',{encoding:'utf8'})).version)}catch(e){process.stdout.write('')}")
-          changed=false
-          if [ -n \"$old_version\" ] && [ \"$old_version\" != \"$new_version\" ]; then
-            changed=true
-          fi
-          echo \"old $old_version new $new_version changed $changed\"
-          echo \"version_changed=$changed\" >> \"$GITHUB_OUTPUT\"
-
   vs-code-marketplace:
-    needs: version-check
-    if: needs.version-check.outputs.version_changed == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout project
