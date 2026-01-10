@@ -39,7 +39,3 @@ jobs:
           title: Version Packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get current branch
-        id: get_branch
-        run: echo "CURRENT_BRANCH=$(git branch --show-current)" >> $GITHUB_ENV
