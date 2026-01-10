@@ -21,8 +21,6 @@ imports:
 
 Visualize, edit, and lint translated strings effortlessly using Inline Decorations & Hover Support. Extract new strings with a simple click, making localization tasks more intuitive and efficient.
 
-[<img width="256px" height="auto" alt="Visual Studio Code install badge" src="https://cdn.jsdelivr.net/gh/opral/sherlock@latest/assets/vscode-install-badge.svg" />](https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension)
-
 <img width="100%" src="https://cdn.jsdelivr.net/gh/opral/sherlock/assets/sherlock-cover-small.png"/>
 
 ✅ Streamline the i18n translation process.
