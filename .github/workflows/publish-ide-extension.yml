@@ -26,7 +26,14 @@ jobs:
             echo "version_changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          node -e "const {execSync}=require('child_process');const fs=require('fs');const newVersion=JSON.parse(fs.readFileSync('package.json','utf8')).version;let oldVersion='';try{oldVersion=JSON.parse(execSync('git show ${{ github.event.before }}:package.json',{encoding:'utf8'})).version}catch(e){};const changed=Boolean(oldVersion)&&oldVersion!==newVersion;console.log('old',oldVersion,'new',newVersion,'changed',changed);fs.appendFileSync(process.env.GITHUB_OUTPUT,`version_changed=${changed}\n`);"
+          new_version=$(node -p "require('./package.json').version")
+          old_version=$(node -e "const {execSync}=require('child_process');try{process.stdout.write(JSON.parse(execSync('git show ${{ github.event.before }}:package.json',{encoding:'utf8'})).version)}catch(e){process.stdout.write('')}")
+          changed=false
+          if [ -n \"$old_version\" ] && [ \"$old_version\" != \"$new_version\" ]; then
+            changed=true
+          fi
+          echo \"old $old_version new $new_version changed $changed\"
+          echo \"version_changed=$changed\" >> \"$GITHUB_OUTPUT\"
 
   vs-code-marketplace:
     needs: version-check
