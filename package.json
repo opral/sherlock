@@ -10,7 +10,7 @@
 		"url": "https://github.com/opral/inlang.git"
 	},
 	"icon": "assets/sherlock-logo.png",
-	"version": "2.1.0",
+	"version": "2.1.2",
 	"engines": {
 		"vscode": "^1.84.2"
 	},
@@ -269,6 +269,9 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:e2e": "npm run pretest && wdio run ./test/wdio.conf.ts",
+		"---- VERSIONING ----------------------------------------------------------": "",
+		"changeset": "changeset",
+		"version": "changeset version",
 		"---- LINT ----------------------------------------------------------": "",
 		"format": "prettier ./src --write",
 		"---- OTHER ----------------------------------------------------------": "",
@@ -296,6 +299,7 @@
 		"vitest": "^3.2.4"
 	},
 	"devDependencies": {
+		"@changesets/cli": "^2.29.8",
 		"@inlang/tsconfig": "workspace:*",
 		"@sentry/node": "^7.99.0",
 		"@types/fs-extra": "^11.0.2",

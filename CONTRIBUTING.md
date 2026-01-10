@@ -1,12 +1,32 @@
-# Contributing to ide-extension
+# Contributing to Sherlock
 
-This package is a special case, because it needs compatibility with additional plattforms like Microsoft Windows and Apple OSx.
+This extension ships for multiple platforms (Windows/macOS/Linux), so please test on more than one OS when touching platform-specific behavior.
 
 ## Getting started
 
-If you are on a POSIX-like system, you can stick to the repositories CONTRIBUTING.md file.
+### Prerequisites
 
-- It is convenient to set a inlang project, which is opened upon debugging the ide-extension. This can be done `.vscode/launch.json` in the second line of `args`.
+- Node.js 22
+- pnpm
+- Git submodules enabled
+
+### Setup
+
+1. Clone with submodules: `git clone --recurse-submodules git@github.com:opral/sherlock.git`
+2. Install dependencies: `pnpm install`
+3. Build the inlang dependencies: `pnpm run build:inlang`
+4. Build Sherlock: `pnpm run build`
+
+### Development
+
+- Run tests: `pnpm test`
+- Watch tests: `pnpm test:watch`
+- Start editor app dev server: `pnpm run editor:dev`
+- Package extension: `pnpm run package`
+
+### Debugging
+
+Set an inlang project in your workspace and point the extension launcher at it via `.vscode/launch.json` (the `args` list).
 
 ### Windows
 

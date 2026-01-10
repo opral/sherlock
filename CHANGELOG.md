@@ -1,4 +1,4 @@
-# inlang-vs-code-extension
+# Sherlock
 
 ## 2.1.2
 

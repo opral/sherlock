@@ -2,7 +2,11 @@ import { configDefaults, defineConfig } from "vitest/config"
 
 export default defineConfig({
 	test: {
-		exclude: [...configDefaults.exclude, "**/*.e2e.test.ts"],
+		exclude: [
+			...configDefaults.exclude,
+			"**/*.e2e.test.ts",
+			"submodule/**",
+		],
 		server: {
 			deps: {
 				external: ["vscode*"],
