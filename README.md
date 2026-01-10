@@ -12,6 +12,8 @@ imports:
 <p>
 <a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/d/inlang.vs-code-extension?color=32CD32" alt="Visual Studio Marketplace Downloads" /></a>
 <a href="https://marketplace.visualstudio.com/items?itemName=inlang.vs-code-extension" target="__blank"><img src="https://img.shields.io/visual-studio-marketplace/i/inlang.vs-code-extension?color=3CB371" alt="Visual Studio Marketplace Installs" /></a>
+<br/>
+<a href="https://github.com/opral/sherlock" target="__blank"><img src="https://img.shields.io/github/last-commit/opral/sherlock?color=9370DB" alt="GitHub last commit" /></a>
 <a href="https://github.com/opral/sherlock/issues" target="__blank"><img src="https://img.shields.io/github/issues/opral/sherlock?color=20B2AA" alt="GitHub issues" /></a>
 <a href="https://github.com/opral/sherlock" target="__blank"><img alt="GitHub stars" src="https://img.shields.io/github/stars/opral/sherlock?style=social"></a>
 </p>
@@ -261,6 +263,24 @@ If you are having trouble with the **loading icon** not disappearing, this is a 
 ## Support: Join our Discord / Open an issue on GitHub!
 
 If something isn't working as expected or you have a feature suggestion, please join our [Discord](https://discord.gg/gdMPPWy57R) or [create an issue](https://github.com/opral/sherlock/issues/new/choose). We are happy to help!
+
+# Development
+
+This repository contains the standalone Sherlock VS Code extension. It vendors inlang as a submodule in `submodule/inlang`.
+
+## Setup
+
+1. Clone with submodules: `git clone --recurse-submodules git@github.com:opral/sherlock.git`
+2. Install dependencies: `pnpm install`
+3. Build inlang deps: `pnpm run build:inlang`
+4. Build Sherlock: `pnpm run build`
+
+## Useful scripts
+
+- `pnpm test`
+- `pnpm test:watch`
+- `pnpm run editor:dev`
+- `pnpm run package`
 
 <style>
 .flex-container {

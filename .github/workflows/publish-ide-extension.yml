@@ -1,0 +1,73 @@
+name: Publish Sherlock (VS Code extension)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "package.json"
+    branches:
+      - main
+
+jobs:
+  version-check:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    outputs:
+      version_changed: ${{ steps.check.outputs.version_changed }}
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect version bump
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node -e "const {execSync}=require('child_process');const fs=require('fs');const newVersion=JSON.parse(fs.readFileSync('package.json','utf8')).version;let oldVersion='';try{oldVersion=JSON.parse(execSync('git show ${{ github.event.before }}:package.json',{encoding:'utf8'})).version}catch(e){};const changed=Boolean(oldVersion)&&oldVersion!==newVersion;console.log('old',oldVersion,'new',newVersion,'changed',changed);fs.appendFileSync(process.env.GITHUB_OUTPUT,`version_changed=${changed}\n`);"
+
+  vs-code-marketplace:
+    needs: version-check
+    if: needs.version-check.outputs.version_changed == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup Pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build Visual Studio Code extension (Sherlock) package
+        run: pnpm run package
+
+      - name: Publish to Visual Studio Code Marketplace
+        run: pnpm run publish -p ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+        env:
+          VSCE_TOKEN: ${{ secrets.VSCODE_MARKETPLACE_TOKEN }}
+
+      - name: Publish to Open VSX Registry
+        run: pnpm run publish:open-vsx
+        env:
+          OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
