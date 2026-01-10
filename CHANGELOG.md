@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.2.0
+
+### Minor Changes
+
+- aab2414: Upgrad inlang SDK to v2.6.0.
+
 ## 2.1.2
 
 - remove the filesystem sync loop so Sherlock stops rewriting translation files during background syncs ([#173](https://github.com/opral/sherlock/issues/173))
