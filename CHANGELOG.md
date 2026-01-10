@@ -1,5 +1,9 @@
 # Sherlock
 
+## 2.1.2
+
+- remove the filesystem sync loop so Sherlock stops rewriting translation files during background syncs ([#173](https://github.com/opral/sherlock/issues/173))
+
 ## 2.1.0
 
 ### Minor Changes
