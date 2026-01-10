@@ -9,6 +9,8 @@ src/**
 **/*.ts
 .wdio-vscode-service
 test
+submodule/**
+.gitmodules
 
 node_modules/**
 examples/**
