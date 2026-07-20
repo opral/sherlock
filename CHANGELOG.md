@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.4.0
+
+### Minor Changes
+
+- a41adfa: Improve project-session lifecycle handling and keep project resource loading, saving, and file watching synchronized.
+
 ## 2.3.3
 
 ### Patch Changes
