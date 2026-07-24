@@ -213,6 +213,78 @@ describe("project resource synchronization", () => {
 		await session.ownedResources[0]?.dispose()
 	})
 
+	it("does not overwrite an external resource edit before its watcher event is handled", async () => {
+		vi.useFakeTimers()
+		const projectPath = path.join(path.sep, "workspace", "project.inlang")
+		const resourcePath = path.join(path.sep, "workspace", "translations", "en.json")
+		const project = {
+			settings: { get: vi.fn(async () => ({ baseLocale: "en", locales: ["en"] })) },
+			plugins: {
+				get: vi.fn(async () => [
+					{
+						key: "plugin.example",
+						importFiles: vi.fn(),
+						toBeImportedFiles: vi.fn(async () => [{ path: resourcePath, locale: "en" }]),
+					},
+				]),
+			},
+		}
+		host.contents.set(resourcePath, new TextEncoder().encode('{"existing":"initial"}'))
+		const session = createSession(project, projectPath)
+		const synchronization = createProjectResourceSynchronization()
+		await synchronization.watch(session as any)
+
+		host.contents.set(
+			resourcePath,
+			new TextEncoder().encode('{"existing":"initial","addedExternally":"preserve me"}')
+		)
+
+		await expect(synchronization.save(project as any, projectPath)).rejects.toThrow(
+			"Project resources changed outside Sherlock"
+		)
+		expect(host.saveProjectToDirectory).not.toHaveBeenCalled()
+		expect(new TextDecoder().decode(host.contents.get(resourcePath))).toContain(
+			'"addedExternally":"preserve me"'
+		)
+		await vi.advanceTimersByTimeAsync(150)
+		expect(session.requestReconciliation).toHaveBeenCalledOnce()
+		await session.ownedResources[0]?.dispose()
+	})
+
+	it("does not save a stale project while external reconciliation is pending", async () => {
+		vi.useFakeTimers()
+		const projectPath = path.join(path.sep, "workspace", "project.inlang")
+		const resourcePath = path.join(path.sep, "workspace", "translations", "en.json")
+		const project = {
+			settings: { get: vi.fn(async () => ({ baseLocale: "en", locales: ["en"] })) },
+			plugins: {
+				get: vi.fn(async () => [
+					{
+						key: "plugin.example",
+						importFiles: vi.fn(),
+						toBeImportedFiles: vi.fn(async () => [{ path: resourcePath, locale: "en" }]),
+					},
+				]),
+			},
+		}
+		host.contents.set(resourcePath, new TextEncoder().encode("initial"))
+		const session = createSession(project, projectPath)
+		const synchronization = createProjectResourceSynchronization()
+		await synchronization.watch(session as any)
+
+		host.contents.set(resourcePath, new TextEncoder().encode("edited externally"))
+		host.watchers[0]?.callbacks.change?.({ fsPath: resourcePath })
+		await vi.waitFor(() => expect(host.readFile).toHaveBeenCalledTimes(2))
+
+		await expect(synchronization.save(project as any, projectPath)).rejects.toThrow(
+			"Project resources changed outside Sherlock"
+		)
+		expect(host.saveProjectToDirectory).not.toHaveBeenCalled()
+		await vi.advanceTimersByTimeAsync(150)
+		expect(session.requestReconciliation).toHaveBeenCalledOnce()
+		await session.ownedResources[0]?.dispose()
+	})
+
 	it("reconciles an external resource edit that overlaps a Sherlock save", async () => {
 		vi.useFakeTimers()
 		const projectPath = path.join(path.sep, "workspace", "project.inlang")
@@ -665,14 +737,16 @@ describe("project resource synchronization", () => {
 		const synchronization = createProjectResourceSynchronization()
 		await synchronization.watch(session as any)
 		const refreshRead = deferred<Uint8Array>()
-		host.readFile.mockReturnValueOnce(refreshRead.promise)
+		host.readFile
+			.mockResolvedValueOnce(new TextEncoder().encode("initial"))
+			.mockReturnValueOnce(refreshRead.promise)
 		host.saveProjectToDirectory.mockImplementationOnce(async ({ fs }) => {
 			await fs.writeFile("../translations/en.json", "saved by Sherlock")
 			host.watchers[0]?.callbacks.change?.({ fsPath: resourcePath })
 		})
 
 		const save = synchronization.save(project as any, projectPath)
-		await vi.waitFor(() => expect(host.readFile).toHaveBeenCalledTimes(2))
+		await vi.waitFor(() => expect(host.readFile).toHaveBeenCalledTimes(3))
 		refreshRead.resolve(new TextEncoder().encode("saved by Sherlock"))
 		host.contents.set(resourcePath, new TextEncoder().encode("edited externally"))
 		await save

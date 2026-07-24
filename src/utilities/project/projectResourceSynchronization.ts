@@ -22,6 +22,7 @@ type ResourceWriteState = {
 	activeWrites: number
 	revision: number
 	refreshers: Set<() => Promise<void>>
+	preflightChecks: Set<() => Promise<void>>
 	trackedPaths: Map<string, number>
 	expectedFingerprints: Map<string, string | typeof MISSING_RESOURCE>
 	writeQueue: Promise<void>
@@ -171,6 +172,7 @@ function resourceWriteState(project: object, resourceWrites: WeakMap<object, Res
 			activeWrites: 0,
 			revision: 0,
 			refreshers: new Set(),
+			preflightChecks: new Set(),
 			trackedPaths: new Map(),
 			expectedFingerprints: new Map(),
 			writeQueue: Promise.resolve(),
@@ -187,6 +189,7 @@ async function runWithResourceWrite<T>(
 ) {
 	const state = writeState(project)
 	const queuedWrite = state.writeQueue.then(async () => {
+		for (const preflightCheck of state.preflightChecks) await preflightCheck()
 		state.revision += 1
 		state.expectedFingerprints.clear()
 		state.release = new Promise<void>((resolve) => {
@@ -258,6 +261,7 @@ async function watchProjectResources(args: {
 	let initializingFingerprints = true
 	let changedDuringInitialization = false
 	let changedAcrossLoadHandoff = false
+	let reconciliationPending = false
 	let debounceTimer: NodeJS.Timeout | undefined
 
 	const requestReconciliation = () => {
@@ -268,6 +272,7 @@ async function watchProjectResources(args: {
 
 	const scheduleReload = () => {
 		if (!acceptingEvents) return
+		reconciliationPending = true
 		if (debounceTimer) clearTimeout(debounceTimer)
 		debounceTimer = setTimeout(requestReconciliation, DEBOUNCE_MS)
 	}
@@ -341,6 +346,26 @@ async function watchProjectResources(args: {
 	}
 
 	const writeState = args.writeState(args.session.project)
+	const checkResourcesBeforeWrite = async () => {
+		if (!acceptingEvents) return
+		if (!reconciliationPending) {
+			for (const filePath of resourcePaths) {
+				let currentFingerprint: string | typeof MISSING_RESOURCE
+				try {
+					currentFingerprint = await fingerprint(filePath)
+				} catch (error) {
+					if (!isMissingFile(error)) throw error
+					currentFingerprint = MISSING_RESOURCE
+				}
+				if (fingerprints.get(filePath) === currentFingerprint) continue
+				fingerprints.set(filePath, currentFingerprint)
+				scheduleReload()
+			}
+		}
+		if (reconciliationPending) {
+			throw new ProjectResourcesChangedError()
+		}
+	}
 	const refreshAfterWrite = async () => {
 		for (const [filePath, expectedFingerprint] of writeState.expectedFingerprints) {
 			if (!fingerprints.has(filePath)) continue
@@ -365,6 +390,7 @@ async function watchProjectResources(args: {
 			}
 		}
 	}
+	writeState.preflightChecks.add(checkResourcesBeforeWrite)
 	for (const filePath of resourcePaths) {
 		writeState.trackedPaths.set(filePath, (writeState.trackedPaths.get(filePath) ?? 0) + 1)
 	}
@@ -374,6 +400,7 @@ async function watchProjectResources(args: {
 		dispose: async () => {
 			acceptingEvents = false
 			writeState.refreshers.delete(refreshAfterWrite)
+			writeState.preflightChecks.delete(checkResourcesBeforeWrite)
 			for (const filePath of resourcePaths) {
 				const owners = writeState.trackedPaths.get(filePath) ?? 0
 				if (owners <= 1) writeState.trackedPaths.delete(filePath)
@@ -464,6 +491,13 @@ async function watchProjectResources(args: {
 	if (changedDuringInitialization || changedAcrossLoadHandoff) scheduleReload()
 
 	return descriptors
+}
+
+export class ProjectResourcesChangedError extends Error {
+	constructor() {
+		super("Project resources changed outside Sherlock; reload before saving.")
+		this.name = "ProjectResourcesChangedError"
+	}
 }
 
 function observeFileSystemMutations(
