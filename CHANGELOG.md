@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.4.1
+
+### Patch Changes
+
+- 8a8b96c: Prevent stale Sherlock saves from overwriting translation keys added by external tools before resource reconciliation completes.
+
 ## 2.4.0
 
 ### Minor Changes
