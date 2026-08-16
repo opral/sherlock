@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.4.2
+
+### Patch Changes
+
+- 9cd3532: Upgrade Sherlock to the Inlang SDK 3 release and its compatible editor and matcher packages.
+
 ## 2.4.1
 
 ### Patch Changes
