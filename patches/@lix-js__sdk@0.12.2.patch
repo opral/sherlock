@@ -1,5 +1,5 @@
 diff --git a/dist/worker/factory.node.js b/dist/worker/factory.node.js
-index 296dcf3..d0db74c 100644
+index 296dcf3..551c44e 100644
 --- a/dist/worker/factory.node.js
 +++ b/dist/worker/factory.node.js
 @@ -3,8 +3,7 @@ import { openNativeLixBinding } from "../binding.node.js";
@@ -8,7 +8,28 @@ index 296dcf3..d0db74c 100644
          name: "lix",
 -        execArgv: process.execArgv.filter((arg, index, args) => !arg.startsWith("--input-type=") &&
 -            !(index > 0 && args[index - 1] === "--input-type")),
-+        execArgv: [],
++        execArgv: workerExecArgv(process.execArgv),
      });
      let terminating = false;
      return {
+@@ -36,6 +35,20 @@ export function createWorkerConnection() {
+         },
+     };
+ }
++export function workerExecArgv(execArgv) {
++    const filtered = [];
++    for (let index = 0; index < execArgv.length; index++) {
++        const arg = execArgv[index];
++        if (arg === "--input-type") {
++            index += 1;
++            continue;
++        }
++        if (arg === "--expose-gc" || arg.startsWith("--input-type="))
++            continue;
++        filtered.push(arg);
++    }
++    return filtered;
++}
+ /// Native Lix already owns a dedicated serialized engine actor. Routing it
+ /// through a second JavaScript worker adds two message-port hops per query
+ /// without adding isolation or concurrency.

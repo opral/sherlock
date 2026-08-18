@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@lix-js/sdk@0.12.2':
-    hash: 65fc31f122ebcf50773f19a021c3ebc03860d3370c4a5116b01bec3726c8e939
+    hash: 6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65
     path: patches/@lix-js__sdk@0.12.2.patch
 
 importers:
@@ -6196,7 +6196,7 @@ snapshots:
 
   '@inlang/sdk@3.0.1':
     dependencies:
-      '@lix-js/sdk': 0.12.2(patch_hash=65fc31f122ebcf50773f19a021c3ebc03860d3370c4a5116b01bec3726c8e939)
+      '@lix-js/sdk': 0.12.2(patch_hash=6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65)
       '@sinclair/typebox': 0.31.28
       kysely: 0.28.17
       sqlite-wasm-kysely: 0.3.0(kysely@0.28.17)
@@ -6360,7 +6360,7 @@ snapshots:
   '@lix-js/sdk-win32-x64@0.12.2':
     optional: true
 
-  '@lix-js/sdk@0.12.2(patch_hash=65fc31f122ebcf50773f19a021c3ebc03860d3370c4a5116b01bec3726c8e939)':
+  '@lix-js/sdk@0.12.2(patch_hash=6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65)':
     dependencies:
       fflate: 0.8.3
     optionalDependencies:
