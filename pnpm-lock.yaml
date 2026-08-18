@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@lix-js/sdk@0.12.2':
-    hash: 6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65
-    path: patches/@lix-js__sdk@0.12.2.patch
-
 importers:
 
   .:
@@ -17,17 +12,17 @@ importers:
         specifier: 3.46.0-build2
         version: 3.46.0-build2
       '@inlang/editor-component':
-        specifier: 11.0.1
-        version: 11.0.1(@inlang/sdk@3.0.1)(@types/react@19.2.7)
+        specifier: 11.0.2
+        version: 11.0.2(@inlang/sdk@3.0.2)(@types/react@19.2.7)
       '@inlang/recommend-sherlock':
         specifier: 0.2.1
         version: 0.2.1
       '@inlang/sdk':
-        specifier: 3.0.1
-        version: 3.0.1
+        specifier: 3.0.2
+        version: 3.0.2
       '@inlang/settings-component':
         specifier: 5.0.0
-        version: 5.0.0(@inlang/sdk@3.0.1)(@types/react@19.2.7)
+        version: 5.0.0(@inlang/sdk@3.0.2)(@types/react@19.2.7)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.27)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
@@ -72,14 +67,14 @@ importers:
         specifier: ^2.29.8
         version: 2.29.8(@types/node@20.19.27)
       '@inlang/plugin-i18next':
-        specifier: 6.2.5
-        version: 6.2.5
+        specifier: 6.2.6
+        version: 6.2.6
       '@inlang/plugin-json':
         specifier: 5.1.57
         version: 5.1.57
       '@inlang/plugin-t-function-matcher':
-        specifier: 2.0.26
-        version: 2.0.26
+        specifier: 2.0.27
+        version: 2.0.27
       '@sentry/node':
         specifier: ^7.99.0
         version: 7.120.4
@@ -171,11 +166,11 @@ importers:
   src/utilities/editor/sherlock-editor-app:
     dependencies:
       '@inlang/editor-component':
-        specifier: 11.0.1
-        version: 11.0.1(@inlang/sdk@3.0.1)(@types/react@19.2.7)
+        specifier: 11.0.2
+        version: 11.0.2(@inlang/sdk@3.0.2)(@types/react@19.2.7)
       '@inlang/sdk':
-        specifier: 3.0.1
-        version: 3.0.1
+        specifier: 3.0.2
+        version: 3.0.2
       '@lit/react':
         specifier: ^1.0.5
         version: 1.0.8(@types/react@19.2.7)
@@ -886,10 +881,10 @@ packages:
     resolution: {integrity: sha512-o0jeI8U4TgNlsPwI0y92jld8/18Loh2KEgHCYCJ42rCOdxFrA8R60cydlEd2/6jkdHFn5DxKj8rOyiKv3z9uOw==}
     deprecated: no longer used
 
-  '@inlang/editor-component@11.0.1':
-    resolution: {integrity: sha512-gobWeEs+S1Yt5uAwfnww8hm+jlNJTjgKlZrGocQltzBtVkH8cL/zrvVIroDWomNnNTRouZJXR1cd4Yzi1G/2eQ==}
+  '@inlang/editor-component@11.0.2':
+    resolution: {integrity: sha512-9rThaQU3trLfX3IhZaFFf4LATKhfFhGPs9u7sR2ALUuWOUYbDLyYHs/G1oSnAYtGGY6lwn4VH0lwgsOAw6QYnA==}
     peerDependencies:
-      '@inlang/sdk': 3.0.1
+      '@inlang/sdk': 3.0.2
 
   '@inlang/json-types@1.1.0':
     resolution: {integrity: sha512-n6vS6AqETsCFbV4TdBvR/EH57waVXzKsMqeUQ+eH2Q6NUATfKhfLabgNms2A+QV3aedH/hLtb1pRmjl2ykBVZg==}
@@ -907,14 +902,14 @@ packages:
     peerDependencies:
       '@sinclair/typebox': ^0.31.17
 
-  '@inlang/plugin-i18next@6.2.5':
-    resolution: {integrity: sha512-2K+ker824FyyLTFrY9vdPMBKOS50D4Of3gncz6qD05jIM9fUd0i6VizQx6/3hQTxpb0tu7s1AL7e610zDTe3Lg==}
+  '@inlang/plugin-i18next@6.2.6':
+    resolution: {integrity: sha512-AaySn4ucTaoPkAwRuoYtPrL9+LKU8vac29gb59j0exwBzWryr7f5J5oMXQW/1m5MHIIjpQEHQZl322+0IanHPQ==}
 
   '@inlang/plugin-json@5.1.57':
     resolution: {integrity: sha512-tRNkZ/k0k4P1q0wYzrb67mrLAXf0JCKp/6gmP90wIZybHgBz7vrleru1V6722GGYc0RzUm8wGEH3s1cOHYoBHg==}
 
-  '@inlang/plugin-t-function-matcher@2.0.26':
-    resolution: {integrity: sha512-SENcQ8kCzgb+UKNJjN4H5o+Zu81dLQo7p9Q3vpjvdogvn74REddRSxRKSYdUhJM9vBz6CODc4F1WZby2a0mDtw==}
+  '@inlang/plugin-t-function-matcher@2.0.27':
+    resolution: {integrity: sha512-YNtwhdhbJLYp8o3GxNez2V8mCsp/Kswnmf9je9v78durQextELdQYmeETB1L1oq7yOb/KF4nwZ36vZgzOnRDmQ==}
 
   '@inlang/plugin@2.4.14':
     resolution: {integrity: sha512-HFI1t1tKs6jXqwKVl59vvt7kvMgg2Po7xA3IFijfJTZCt0tTI8txqeXCUV9jhUop29Hqj6a5zQd32BYv33Dulw==}
@@ -930,8 +925,8 @@ packages:
   '@inlang/recommend-sherlock@0.2.1':
     resolution: {integrity: sha512-ckv8HvHy/iTqaVAEKrr+gnl+p3XFNwe5D2+6w6wJk2ORV2XkcRkKOJ/XsTUJbPSiyi4PI+p+T3bqbmNx/rDUlg==}
 
-  '@inlang/sdk@3.0.1':
-    resolution: {integrity: sha512-QvyMYjCqF7CnrTp8ZaPiuwpmxsoQPIDgfqGeWfqi4FDxBREye4QdyaZS4DGwIlCZXybF/YMj0TtL2uBfbmajug==}
+  '@inlang/sdk@3.0.2':
+    resolution: {integrity: sha512-qBAzkOLRQ42hZBl2/AZFZD+/JkdjBAvwxWphdTs9UbikMsuLathOBOIl+rC/mzaq48ylD3zE8Je2nrx7tbm0pw==}
     engines: {node: '>=20.0.0'}
 
   '@inlang/settings-component@5.0.0':
@@ -1041,28 +1036,28 @@ packages:
     resolution: {integrity: sha512-B9X3FjD8WmdG7tbA44JuniSO0KdKBWnjfxl8zpgrDCkavrp/GP7U0xxBkc0WgeeoHjQ/pkqq9VqtWB2kS9jIUg==}
     deprecated: use the lix sdk instead https://www.npmjs.com/package/@lix-js/sdk
 
-  '@lix-js/sdk-darwin-arm64@0.12.2':
-    resolution: {integrity: sha512-0mBRIfgZfaey1/d0mijv7fBIGPeaTIMCDOPr3s4RUlHy/j+llNmAyDS2iNlalFh9nQGys7JNzo2Hv3FQbdKmug==}
+  '@lix-js/sdk-darwin-arm64@0.12.3':
+    resolution: {integrity: sha512-YeMJyYGk+QwvQe8O4AAcBMgfNm68IjAGDvuvZHr1U1rIb3GC2kYFStajqf4mT4BGc+cN65/P/2kkqEo+Igu/sA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@lix-js/sdk-linux-arm64@0.12.2':
-    resolution: {integrity: sha512-817uJlC2KTIKDaqQvALTu03hEJpNxEA+9d33FNs8sOm9pAguOWiAK1zGA2SD0IgS9Q8NqQeABLb84OesW5/NCA==}
+  '@lix-js/sdk-linux-arm64@0.12.3':
+    resolution: {integrity: sha512-jtmfNg6jLW61l1QvsU3W184l3hGtYUyPGzZrQyekk0vsMF1hxsP++7ONEGNI19PE7ldwSnGCB8Q6OzRKX87abQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@lix-js/sdk-linux-x64@0.12.2':
-    resolution: {integrity: sha512-rA7lw1jBr6azBHR5Sh/RzOKSAlRcmVea7VeI4VQqpy0PZs+5tWoK9iVC41V4oCIKssRv2wrkbvyP3CqInhoknQ==}
+  '@lix-js/sdk-linux-x64@0.12.3':
+    resolution: {integrity: sha512-PiQL4h1FJXbxnZx/PgenI5grgpFtYlS/ZtPtTYh638YHVu+6J0cqGY/pLVqP8CKv1dWAKsZ2YgftLd+1j2+WKA==}
     cpu: [x64]
     os: [linux]
 
-  '@lix-js/sdk-win32-x64@0.12.2':
-    resolution: {integrity: sha512-y9IikCdrYx6cFnfqeUvYKPw6KBY016U2F2wYDILYZDZndccK2xw7lJChX163w9PewMwY3GsC/UqRBi5yqFAJ2w==}
+  '@lix-js/sdk-win32-x64@0.12.3':
+    resolution: {integrity: sha512-hnxMI7kPS4ngXs0ZVnOve5CmtC4+vaNIyNDi/yWU0rSvxj7mqw/1RCegTrCB7LjxlX4DG+eg9HruXurk9NDjGg==}
     cpu: [x64]
     os: [win32]
 
-  '@lix-js/sdk@0.12.2':
-    resolution: {integrity: sha512-sKGOPdVKdChS5q60F4VQE4ZTcf0B7ZJM3KGCVQFN2suVNKhHcllbsCiwRYuM5WL7Yu1ql7YexltJ2FCsDqKePg==}
+  '@lix-js/sdk@0.12.3':
+    resolution: {integrity: sha512-T2194yoZsM2S9kyRmI8UtEJL0fgXYAkeY9jZ/PVyC0K78/wmBvrqOSt9SdvgYxM5qnZ57re3NLOjVlV+X5hWxQ==}
 
   '@ljharb/through@2.3.14':
     resolution: {integrity: sha512-ajBvlKpWucBB17FuQYUShqpqy8GRgYEpJW0vWJbUu1CV9lWyrDCapy0lScU8T8Z6qn49sSwJB3+M+evYIdGg+A==}
@@ -6131,9 +6126,9 @@ snapshots:
     dependencies:
       guess-json-indent: 2.0.0
 
-  '@inlang/editor-component@11.0.1(@inlang/sdk@3.0.1)(@types/react@19.2.7)':
+  '@inlang/editor-component@11.0.2(@inlang/sdk@3.0.2)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 3.0.1
+      '@inlang/sdk': 3.0.2
       '@lexical/plain-text': 0.16.1
       '@lexical/utils': 0.16.1
       '@lit/task': 1.0.3
@@ -6158,9 +6153,9 @@ snapshots:
       '@inlang/language-tag': 1.5.1
       '@sinclair/typebox': 0.31.28
 
-  '@inlang/plugin-i18next@6.2.5':
+  '@inlang/plugin-i18next@6.2.6':
     dependencies:
-      '@inlang/sdk': 3.0.1
+      '@inlang/sdk': 3.0.2
       '@sinclair/typebox': 0.31.28
 
   '@inlang/plugin-json@5.1.57':
@@ -6170,9 +6165,9 @@ snapshots:
       '@lix-js/fs': 2.2.0
       '@sinclair/typebox': 0.31.28
 
-  '@inlang/plugin-t-function-matcher@2.0.26':
+  '@inlang/plugin-t-function-matcher@2.0.27':
     dependencies:
-      '@inlang/sdk': 3.0.1
+      '@inlang/sdk': 3.0.2
 
   '@inlang/plugin@2.4.14(@sinclair/typebox@0.31.28)':
     dependencies:
@@ -6194,17 +6189,17 @@ snapshots:
     dependencies:
       comment-json: 4.5.1
 
-  '@inlang/sdk@3.0.1':
+  '@inlang/sdk@3.0.2':
     dependencies:
-      '@lix-js/sdk': 0.12.2(patch_hash=6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65)
+      '@lix-js/sdk': 0.12.3
       '@sinclair/typebox': 0.31.28
       kysely: 0.28.17
       sqlite-wasm-kysely: 0.3.0(kysely@0.28.17)
       uuid: 14.0.0
 
-  '@inlang/settings-component@5.0.0(@inlang/sdk@3.0.1)(@types/react@19.2.7)':
+  '@inlang/settings-component@5.0.0(@inlang/sdk@3.0.2)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 3.0.1
+      '@inlang/sdk': 3.0.2
       '@lit/task': 1.0.3
       '@shoelace-style/shoelace': 2.14.0(@types/react@19.2.7)
       '@sinclair/typebox': 0.31.28
@@ -6348,26 +6343,26 @@ snapshots:
     dependencies:
       typescript: 5.2.2
 
-  '@lix-js/sdk-darwin-arm64@0.12.2':
+  '@lix-js/sdk-darwin-arm64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-linux-arm64@0.12.2':
+  '@lix-js/sdk-linux-arm64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-linux-x64@0.12.2':
+  '@lix-js/sdk-linux-x64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-win32-x64@0.12.2':
+  '@lix-js/sdk-win32-x64@0.12.3':
     optional: true
 
-  '@lix-js/sdk@0.12.2(patch_hash=6fc6d6dda7267adcd8e89a6ee96cec243476655ddf782c63cb352e57ddecfb65)':
+  '@lix-js/sdk@0.12.3':
     dependencies:
       fflate: 0.8.3
     optionalDependencies:
-      '@lix-js/sdk-darwin-arm64': 0.12.2
-      '@lix-js/sdk-linux-arm64': 0.12.2
-      '@lix-js/sdk-linux-x64': 0.12.2
-      '@lix-js/sdk-win32-x64': 0.12.2
+      '@lix-js/sdk-darwin-arm64': 0.12.3
+      '@lix-js/sdk-linux-arm64': 0.12.3
+      '@lix-js/sdk-linux-x64': 0.12.3
+      '@lix-js/sdk-win32-x64': 0.12.3
 
   '@ljharb/through@2.3.14':
     dependencies:

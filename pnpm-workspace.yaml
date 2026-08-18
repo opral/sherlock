@@ -1,6 +1,3 @@
 packages:
   - "."
   - "src/utilities/editor/sherlock-editor-app"
-
-patchedDependencies:
-  "@lix-js/sdk@0.12.2": "patches/@lix-js__sdk@0.12.2.patch"

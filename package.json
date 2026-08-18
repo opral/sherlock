@@ -276,9 +276,9 @@
 	},
 	"dependencies": {
 		"@eliaspourquoi/sqlite-node-wasm": "3.46.0-build2",
-		"@inlang/editor-component": "11.0.1",
+		"@inlang/editor-component": "11.0.2",
 		"@inlang/recommend-sherlock": "0.2.1",
-		"@inlang/sdk": "3.0.1",
+		"@inlang/sdk": "3.0.2",
 		"@inlang/settings-component": "5.0.0",
 		"@vitest/coverage-v8": "^3.2.4",
 		"comlink": "^4.4.1",
@@ -296,9 +296,9 @@
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.8",
-		"@inlang/plugin-i18next": "6.2.5",
+		"@inlang/plugin-i18next": "6.2.6",
 		"@inlang/plugin-json": "5.1.57",
-		"@inlang/plugin-t-function-matcher": "2.0.26",
+		"@inlang/plugin-t-function-matcher": "2.0.27",
 		"@sentry/node": "^7.99.0",
 		"@types/fs-extra": "^11.0.2",
 		"@types/glob": "^8.1.0",

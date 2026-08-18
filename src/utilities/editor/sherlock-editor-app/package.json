@@ -10,8 +10,8 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@inlang/editor-component": "11.0.1",
-		"@inlang/sdk": "3.0.1",
+		"@inlang/editor-component": "11.0.2",
+		"@inlang/sdk": "3.0.2",
 		"@lit/react": "^1.0.5",
 		"clsx": "^2.1.1",
 		"jotai": "^2.11.1",

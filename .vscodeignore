@@ -12,7 +12,6 @@ src/**
 .wdio-vscode-service
 test
 docs/**
-patches/**
 submodule/**
 build.js
 publish-openvsx.js
