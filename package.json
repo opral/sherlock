@@ -12,7 +12,7 @@
 	"icon": "assets/sherlock-logo.png",
 	"version": "2.4.2",
 	"engines": {
-		"vscode": "^1.90.0"
+		"vscode": "^1.100.0"
 	},
 	"keywords": [
 		"i18n",
@@ -30,7 +30,7 @@
 		"Linters",
 		"Visualization"
 	],
-	"main": "./dist/main.cjs",
+	"main": "./dist/main.js",
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
@@ -276,9 +276,9 @@
 	},
 	"dependencies": {
 		"@eliaspourquoi/sqlite-node-wasm": "3.46.0-build2",
-		"@inlang/editor-component": "10.0.3",
+		"@inlang/editor-component": "11.0.1",
 		"@inlang/recommend-sherlock": "0.2.1",
-		"@inlang/sdk": "2.10.2",
+		"@inlang/sdk": "3.0.1",
 		"@inlang/settings-component": "5.0.0",
 		"@vitest/coverage-v8": "^3.2.4",
 		"comlink": "^4.4.1",
@@ -296,9 +296,9 @@
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.29.8",
-		"@inlang/plugin-i18next": "6.2.3",
+		"@inlang/plugin-i18next": "6.2.5",
 		"@inlang/plugin-json": "5.1.57",
-		"@inlang/plugin-t-function-matcher": "2.0.24",
+		"@inlang/plugin-t-function-matcher": "2.0.26",
 		"@sentry/node": "^7.99.0",
 		"@types/fs-extra": "^11.0.2",
 		"@types/glob": "^8.1.0",
@@ -308,7 +308,7 @@
 		"@types/require-from-string": "^1.2.1",
 		"@types/throttle-debounce": "^5.0.2",
 		"@types/ungap__structured-clone": "^0.3.3",
-		"@types/vscode": "1.90.0",
+		"@types/vscode": "1.100.0",
 		"@vscode/vsce": "^3.2.2",
 		"@wdio/cli": "^8.24.6",
 		"@wdio/globals": "^8.24.6",

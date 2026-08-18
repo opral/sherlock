@@ -5,13 +5,25 @@
 import { context } from "esbuild"
 import esbuild from "esbuild"
 import fs from "node:fs/promises"
+import { createRequire } from "node:module"
 import path from "node:path"
 
 // eslint-disable-next-line no-undef
 const isDev = process?.env?.DEV !== undefined
 
-const defaultEntryPoints = [{ in: "./src/main.ts", out: "./main" }]
+const require = createRequire(import.meta.url)
+const inlangSdkRequire = createRequire(require.resolve("@inlang/sdk"))
+const lixSdkDist = path.dirname(inlangSdkRequire.resolve("@lix-js/sdk"))
+const defaultEntryPoints = [
+	{ in: "./src/main.ts", out: "./main" },
+	{ in: path.join(lixSdkDist, "worker/entry.node.js"), out: "./entry.node" },
+]
 const packagesToCopy = [
+	{
+		src: path.join(lixSdkDist, "wasm/lix_js_sdk_bg.wasm"),
+		dest: "./dist/wasm/lix_js_sdk_bg.wasm",
+		transpile: false,
+	},
 	{
 		src: "node_modules/lit-html/lit-html.js",
 		dest: "./assets/lit-html.js",
@@ -42,7 +54,11 @@ const packagesToCopyDir = [
 let buildOptions = {
 	entryPoints: defaultEntryPoints,
 	outdir: "./dist/",
-	outExtension: { ".js": ".cjs" },
+	outExtension: { ".js": ".js" },
+	format: "esm",
+	banner: {
+		js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);',
+	},
 	platform: "node",
 	bundle: true,
 	minify: true,
@@ -68,6 +84,7 @@ if (isDev) {
 
 const ctx = await context(buildOptions)
 
+await fs.rm(buildOptions.outdir, { recursive: true, force: true })
 await copyDependencies()
 await copyDirectories()
 

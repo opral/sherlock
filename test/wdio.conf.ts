@@ -11,6 +11,7 @@ const __dirname = url.fileURLToPath(new URL(".", import.meta.url))
 const fixtureWorkspacePath = path.join(__dirname, "../examples/minimal")
 const providedWorkspacePath = process.env.SHERLOCK_E2E_WORKSPACE
 const providedChromedriverPath = process.env.SHERLOCK_E2E_CHROMEDRIVER
+const providedExtensionPath = process.env.SHERLOCK_E2E_EXTENSION_PATH
 const tempWorkspaceRoot = providedWorkspacePath
 	? undefined
 	: fs.mkdtempSync(path.join(os.tmpdir(), "sherlock-e2e-"))
@@ -103,7 +104,7 @@ export const config: Options.Testrunner = {
 			"wdio:vscodeOptions": {
 				verboseLogging: false,
 				// points to directory where extension package.json is located
-				extensionPath: path.join(__dirname, ".."),
+				extensionPath: providedExtensionPath ?? path.join(__dirname, ".."),
 				workspacePath: e2eWorkspacePath,
 				// optional VS Code settings
 				userSettings: {

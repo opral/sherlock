@@ -1,0 +1,14 @@
+diff --git a/dist/worker/factory.node.js b/dist/worker/factory.node.js
+index 296dcf3..d0db74c 100644
+--- a/dist/worker/factory.node.js
++++ b/dist/worker/factory.node.js
+@@ -3,8 +3,7 @@ import { openNativeLixBinding } from "../binding.node.js";
+ export function createWorkerConnection() {
+     const worker = new Worker(new URL("./entry.node.js", import.meta.url), {
+         name: "lix",
+-        execArgv: process.execArgv.filter((arg, index, args) => !arg.startsWith("--input-type=") &&
+-            !(index > 0 && args[index - 1] === "--input-type")),
++        execArgv: [],
+     });
+     let terminating = false;
+     return {
