@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.4.3
+
+### Patch Changes
+
+- 67aaaa7: Restore project loading with SDK 3.0.2 by shipping Sherlock as ESM together with the Lix worker and WASM fallback runtime.
+
 ## 2.4.2
 
 ### Patch Changes
