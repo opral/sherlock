@@ -134,6 +134,7 @@ async function copyDirectories() {
 			// Check if the source directory exists
 			await fs.access(src)
 
+			await fs.rm(dest, { recursive: true, force: true })
 			await fs.mkdir(dest, { recursive: true })
 			await copyDir(src, dest)
 		} catch (err) {
