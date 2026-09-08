@@ -6,6 +6,7 @@ import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { capture } from "../services/telemetry/index.js"
 import { humanId, upsertBundleNested } from "@inlang/sdk"
+import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 import { state } from "../utilities/state.js"
 import { v4 as uuidv4 } from "uuid"
 
@@ -70,6 +71,10 @@ vi.mock("../utilities/project/projectRuntime.js", () => ({
 				: undefined
 		},
 	}),
+}))
+
+vi.mock("../utilities/project/projectResourceSynchronization.js", () => ({
+	saveProjectResources: vi.fn(async () => undefined),
 }))
 
 vi.mock("uuid", () => ({
@@ -152,7 +157,7 @@ describe("createMessageCommand", () => {
 		await createMessageCommand.callback()
 
 		expect(window.showErrorMessage).toHaveBeenCalledWith(
-			"Couldn't upsert new message. Error: Some error"
+			"Couldn't create new message. Error: Some error"
 		)
 	})
 
@@ -180,9 +185,33 @@ describe("createMessageCommand", () => {
 		await createMessageCommand.callback()
 
 		expect(upsertBundleNested).toHaveBeenCalled()
+		expect(saveProjectResources).toHaveBeenCalledWith(state().project, "/workspace/project.inlang")
+		expect(vi.mocked(saveProjectResources).mock.invocationCallOrder[0]).toBeGreaterThan(
+			vi.mocked(upsertBundleNested).mock.invocationCallOrder[0]!
+		)
 		expect(CONFIGURATION.EVENTS.ON_DID_CREATE_MESSAGE.fire).toHaveBeenCalled()
 		expect(capture).toHaveBeenCalled()
 		expect(msg).toHaveBeenCalledWith("Message created.")
+	})
+
+	it("reports save failures without announcing success", async () => {
+		vi.mocked(state).mockReturnValue({
+			project: { settings: { get: vi.fn().mockResolvedValue({ baseLocale: "en" }) } },
+		} as any)
+		vi.mocked(getSetting).mockResolvedValueOnce(false)
+		vi.mocked(window.showInputBox)
+			.mockResolvedValueOnce("Some message content")
+			.mockResolvedValueOnce("messageId123")
+		vi.mocked(saveProjectResources).mockRejectedValueOnce(new Error("Disk full"))
+
+		await createMessageCommand.callback()
+
+		expect(window.showErrorMessage).toHaveBeenCalledWith(
+			"Couldn't create new message. Error: Disk full"
+		)
+		expect(CONFIGURATION.EVENTS.ON_DID_CREATE_MESSAGE.fire).not.toHaveBeenCalled()
+		expect(capture).not.toHaveBeenCalled()
+		expect(msg).not.toHaveBeenCalledWith("Message created.")
 	})
 
 	it("does not create a message after its project lease becomes stale", async () => {
@@ -205,6 +234,7 @@ describe("createMessageCommand", () => {
 		await createMessageCommand.callback()
 
 		expect(upsertBundleNested).not.toHaveBeenCalled()
+		expect(saveProjectResources).not.toHaveBeenCalled()
 		expect(CONFIGURATION.EVENTS.ON_DID_CREATE_MESSAGE.fire).not.toHaveBeenCalled()
 		expect(msg).toHaveBeenCalledWith("The active project changed before the message was created.")
 	})

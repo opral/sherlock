@@ -6,6 +6,7 @@ import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { v4 as uuidv4 } from "uuid"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
+import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 
 /**
  * Helps the user to create messages by prompting for the message content.
@@ -75,6 +76,7 @@ export const createMessageCommand = {
 		try {
 			const created = await lease.runTask(async () => {
 				await upsertBundleNested(lease.project.db, bundle)
+				await saveProjectResources(lease.project, lease.path)
 				return true
 			})
 			if (created.status !== "completed") {
@@ -90,7 +92,7 @@ export const createMessageCommand = {
 
 			return msg("Message created.")
 		} catch (e) {
-			return window.showErrorMessage(`Couldn't upsert new message. ${e}`)
+			return window.showErrorMessage(`Couldn't create new message. ${e}`)
 		}
 	},
 } as const
