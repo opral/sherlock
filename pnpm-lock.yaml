@@ -12,17 +12,17 @@ importers:
         specifier: 3.46.0-build2
         version: 3.46.0-build2
       '@inlang/editor-component':
-        specifier: 11.0.4
-        version: 11.0.4(@inlang/sdk@3.0.4)(@types/react@19.2.7)
+        specifier: 11.0.5
+        version: 11.0.5(@inlang/sdk@3.0.5)(@types/react@19.2.7)
       '@inlang/recommend-sherlock':
         specifier: 0.2.1
         version: 0.2.1
       '@inlang/sdk':
-        specifier: 3.0.4
-        version: 3.0.4
+        specifier: 3.0.5
+        version: 3.0.5
       '@inlang/settings-component':
         specifier: 5.0.0
-        version: 5.0.0(@inlang/sdk@3.0.4)(@types/react@19.2.7)
+        version: 5.0.0(@inlang/sdk@3.0.5)(@types/react@19.2.7)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.27)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
@@ -166,11 +166,11 @@ importers:
   src/utilities/editor/sherlock-editor-app:
     dependencies:
       '@inlang/editor-component':
-        specifier: 11.0.4
-        version: 11.0.4(@inlang/sdk@3.0.4)(@types/react@19.2.7)
+        specifier: 11.0.5
+        version: 11.0.5(@inlang/sdk@3.0.5)(@types/react@19.2.7)
       '@inlang/sdk':
-        specifier: 3.0.4
-        version: 3.0.4
+        specifier: 3.0.5
+        version: 3.0.5
       '@lit/react':
         specifier: ^1.0.5
         version: 1.0.8(@types/react@19.2.7)
@@ -894,10 +894,10 @@ packages:
     resolution: {integrity: sha512-o0jeI8U4TgNlsPwI0y92jld8/18Loh2KEgHCYCJ42rCOdxFrA8R60cydlEd2/6jkdHFn5DxKj8rOyiKv3z9uOw==}
     deprecated: no longer used
 
-  '@inlang/editor-component@11.0.4':
-    resolution: {integrity: sha512-V5B4LwQQ8b+CYGbu5SFSlo3WedjaYPgvW1FCniPM8YtVDnBKRzTkjFr64wPMBDzjRbtgGmi3DgxHs+UVuYePyQ==}
+  '@inlang/editor-component@11.0.5':
+    resolution: {integrity: sha512-kV6omRFyS1853F19zg6dgiJSGVri43zuNyFhaje9KlV8s+KGXlxTpOZhS5vP2G8J+ZOywnN6k4DY6Z3bCH5VuQ==}
     peerDependencies:
-      '@inlang/sdk': 3.0.4
+      '@inlang/sdk': 3.0.5
 
   '@inlang/json-types@1.1.0':
     resolution: {integrity: sha512-n6vS6AqETsCFbV4TdBvR/EH57waVXzKsMqeUQ+eH2Q6NUATfKhfLabgNms2A+QV3aedH/hLtb1pRmjl2ykBVZg==}
@@ -942,8 +942,8 @@ packages:
     resolution: {integrity: sha512-qBAzkOLRQ42hZBl2/AZFZD+/JkdjBAvwxWphdTs9UbikMsuLathOBOIl+rC/mzaq48ylD3zE8Je2nrx7tbm0pw==}
     engines: {node: '>=20.0.0'}
 
-  '@inlang/sdk@3.0.4':
-    resolution: {integrity: sha512-1daid3Z/c3Qb9z2zgmbc/p2wnDvuq5l5pD2EhFnNA4JOQcFmbOqst/FTlpxDpdTcGGPYlDOaka5K11Ifp/eshg==}
+  '@inlang/sdk@3.0.5':
+    resolution: {integrity: sha512-kJBivhj3AeM8Mt1AnmLt48B+OYMGkXXu7Duw+UcWmk4VxqqF/Glm9y/BCcWQWMGi6mj7U40qvW7y7wVyHeVhMA==}
     engines: {node: '>=20.0.0'}
 
   '@inlang/settings-component@5.0.0':
@@ -1058,8 +1058,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@lix-js/sdk-darwin-arm64@0.15.1':
-    resolution: {integrity: sha512-RTe5hNe8lkF4uZ/ktKQFaXbFtowf617XTLs8Q/lPbAvCN/87A7KkmGyWV2mO8uZyposn/UO8q2NnD2yns8bPPA==}
+  '@lix-js/sdk-darwin-arm64@0.16.1':
+    resolution: {integrity: sha512-BKUerxQ5DV1o9L8n3uxZMTdUyjNGDLyh4zoYCQ1sakeAa2mQbb4aYnhYrpJT8Ob+zA5B/IZMQfphz6zOSrXNcw==}
     cpu: [arm64]
     os: [darwin]
 
@@ -1068,8 +1068,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@lix-js/sdk-linux-arm64@0.15.1':
-    resolution: {integrity: sha512-uxyc4NzNGDVyytz8CZblVW++X1JtP9qin28CVyqLKV3iM0CQ/VcUog0WwyEWL7OogvjXilZLJdu1pskDzsRm1A==}
+  '@lix-js/sdk-linux-arm64@0.16.1':
+    resolution: {integrity: sha512-rJ5qtFStX+BlU7NXtTVJjRl5mumzFRJs6UcJTui/ib9M6d1nw9wTtRwB/DuFACExRrnDQkmqL9W7Ulm14Mluyw==}
     cpu: [arm64]
     os: [linux]
 
@@ -1078,8 +1078,8 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@lix-js/sdk-linux-x64@0.15.1':
-    resolution: {integrity: sha512-gCEN5Ql2JvQn4MpwiILpmFxxO3AHAfmoa4mMvBWFwdKUICaJf5Yzr0zUfHEeLYtvcKpXbpu6dxyZ+AOc8I18ng==}
+  '@lix-js/sdk-linux-x64@0.16.1':
+    resolution: {integrity: sha512-xZxSKMiGFWFXbV+QFEfa0K+EBvgE7WIn32imVKQC/ZMfUnPH4SmdN2FbdS7qe2TAKdx38qUdI8mvcnrhNZ8nAw==}
     cpu: [x64]
     os: [linux]
 
@@ -1088,16 +1088,16 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@lix-js/sdk-win32-x64@0.15.1':
-    resolution: {integrity: sha512-hyo2Sj67mBwhMZ2DFO1UgN4barByYiHojUnVQI9WGue5Slva5vBusbecQG1XSXrYv6HkVxLpS2zwUrr7DTjWQg==}
+  '@lix-js/sdk-win32-x64@0.16.1':
+    resolution: {integrity: sha512-1H84YqSd6VhzyUl5hdW4106QCnhO0NE9xRfT6ci6JvU/opNC9JWiOyKLboqlJWkupSIW9VlfL5Cwza6fZs5mLw==}
     cpu: [x64]
     os: [win32]
 
   '@lix-js/sdk@0.12.3':
     resolution: {integrity: sha512-T2194yoZsM2S9kyRmI8UtEJL0fgXYAkeY9jZ/PVyC0K78/wmBvrqOSt9SdvgYxM5qnZ57re3NLOjVlV+X5hWxQ==}
 
-  '@lix-js/sdk@0.15.1':
-    resolution: {integrity: sha512-mgtPwKg1Etx4NLGADesa+0DNkwVYOrSsIFVhv+VaBGJTisFYMVMucgzYXZQ1XHRpA1jxdFaKhheK3x3tArvv8Q==}
+  '@lix-js/sdk@0.16.1':
+    resolution: {integrity: sha512-TphGW47tPJ52n8Umk46j56veeaz/uLoS9m1pWYWs0UnnbItsntu6hW/alxW/OX1WZA7vXk7d1OP6qIbmluc+kA==}
 
   '@ljharb/through@2.3.14':
     resolution: {integrity: sha512-ajBvlKpWucBB17FuQYUShqpqy8GRgYEpJW0vWJbUu1CV9lWyrDCapy0lScU8T8Z6qn49sSwJB3+M+evYIdGg+A==}
@@ -6237,9 +6237,9 @@ snapshots:
     dependencies:
       guess-json-indent: 2.0.0
 
-  '@inlang/editor-component@11.0.4(@inlang/sdk@3.0.4)(@types/react@19.2.7)':
+  '@inlang/editor-component@11.0.5(@inlang/sdk@3.0.5)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 3.0.4
+      '@inlang/sdk': 3.0.5
       '@lexical/plain-text': 0.16.1
       '@lexical/utils': 0.16.1
       '@lit/task': 1.0.3
@@ -6308,16 +6308,16 @@ snapshots:
       sqlite-wasm-kysely: 0.3.0(kysely@0.28.17)
       uuid: 14.0.0
 
-  '@inlang/sdk@3.0.4':
+  '@inlang/sdk@3.0.5':
     dependencies:
-      '@lix-js/sdk': 0.15.1
+      '@lix-js/sdk': 0.16.1
       '@sinclair/typebox': 0.31.30
       kysely: 0.28.17
       uuid: 14.0.2
 
-  '@inlang/settings-component@5.0.0(@inlang/sdk@3.0.4)(@types/react@19.2.7)':
+  '@inlang/settings-component@5.0.0(@inlang/sdk@3.0.5)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 3.0.4
+      '@inlang/sdk': 3.0.5
       '@lit/task': 1.0.3
       '@shoelace-style/shoelace': 2.14.0(@types/react@19.2.7)
       '@sinclair/typebox': 0.31.28
@@ -6464,25 +6464,25 @@ snapshots:
   '@lix-js/sdk-darwin-arm64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-darwin-arm64@0.15.1':
+  '@lix-js/sdk-darwin-arm64@0.16.1':
     optional: true
 
   '@lix-js/sdk-linux-arm64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-linux-arm64@0.15.1':
+  '@lix-js/sdk-linux-arm64@0.16.1':
     optional: true
 
   '@lix-js/sdk-linux-x64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-linux-x64@0.15.1':
+  '@lix-js/sdk-linux-x64@0.16.1':
     optional: true
 
   '@lix-js/sdk-win32-x64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-win32-x64@0.15.1':
+  '@lix-js/sdk-win32-x64@0.16.1':
     optional: true
 
   '@lix-js/sdk@0.12.3':
@@ -6494,14 +6494,14 @@ snapshots:
       '@lix-js/sdk-linux-x64': 0.12.3
       '@lix-js/sdk-win32-x64': 0.12.3
 
-  '@lix-js/sdk@0.15.1':
+  '@lix-js/sdk@0.16.1':
     dependencies:
       fflate: 0.8.3
     optionalDependencies:
-      '@lix-js/sdk-darwin-arm64': 0.15.1
-      '@lix-js/sdk-linux-arm64': 0.15.1
-      '@lix-js/sdk-linux-x64': 0.15.1
-      '@lix-js/sdk-win32-x64': 0.15.1
+      '@lix-js/sdk-darwin-arm64': 0.16.1
+      '@lix-js/sdk-linux-arm64': 0.16.1
+      '@lix-js/sdk-linux-x64': 0.16.1
+      '@lix-js/sdk-win32-x64': 0.16.1
 
   '@ljharb/through@2.3.14':
     dependencies:

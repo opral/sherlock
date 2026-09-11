@@ -276,9 +276,9 @@
 	},
 	"dependencies": {
 		"@eliaspourquoi/sqlite-node-wasm": "3.46.0-build2",
-		"@inlang/editor-component": "11.0.4",
+		"@inlang/editor-component": "11.0.5",
 		"@inlang/recommend-sherlock": "0.2.1",
-		"@inlang/sdk": "3.0.4",
+		"@inlang/sdk": "3.0.5",
 		"@inlang/settings-component": "5.0.0",
 		"@vitest/coverage-v8": "^3.2.4",
 		"comlink": "^4.4.1",
