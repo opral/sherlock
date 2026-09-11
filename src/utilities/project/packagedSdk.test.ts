@@ -59,13 +59,19 @@ describe("packaged SDK", () => {
 			path.join(bundleDirectory, "wasm/lix_js_sdk_bg.wasm")
 		)
 
-		const projectPath = path.join(process.cwd(), "examples/minimal/project.inlang")
-		const { stdout } = await execFileAsync(process.execPath, [
-			"--expose-gc",
-			path.join(bundleDirectory, "project-loader.js"),
-			projectPath,
-		])
+		// Keep the worker/WASM smoke test independent of CDN plugin downloads.
+		const projectPath = path.join(bundleDirectory, "project.inlang")
+		await fs.mkdir(projectPath)
+		await fs.writeFile(
+			path.join(projectPath, "settings.json"),
+			JSON.stringify({ baseLocale: "en", locales: ["en", "de"], modules: [] })
+		)
+		const { stdout } = await execFileAsync(
+			process.execPath,
+			["--expose-gc", path.join(bundleDirectory, "project-loader.js"), projectPath],
+			{ timeout: 20_000 }
+		)
 
 		expect(JSON.parse(stdout.trim())).toEqual(["en", "de"])
-	})
+	}, 30_000)
 })
