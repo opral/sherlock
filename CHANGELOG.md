@@ -1,5 +1,12 @@
 # Sherlock
 
+## 2.4.5
+
+### Patch Changes
+
+- 25914f3: Upgrade Inlang SDK to 3.0.5 and the editor component to 11.0.5 in the extension and embedded editor. Includes Lix 0.16.1 to fix loading sorted message files above 512 tracked-state rows, plus transaction and snapshot restoration fixes.
+- 1d68b64: Deduplicate the editor and browser worker WASM asset in the published extension, and remove stale editor assets when rebuilding.
+
 ## 2.4.4
 
 ### Patch Changes
