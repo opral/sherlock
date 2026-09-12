@@ -58,8 +58,14 @@ export async function linterDiagnostics(args: {
 
 								for (const result of lintResults) {
 									const diagnosticRange = new vscode.Range(
-										new vscode.Position(0, 0), // Adjust based on actual range from matcher
-										new vscode.Position(0, 1)
+										new vscode.Position(
+											bundle.position.start.line - 1,
+											bundle.position.start.character - 1
+										),
+										new vscode.Position(
+											bundle.position.end.line - 1,
+											bundle.position.end.character - 1
+										)
 									)
 
 									const diagnostic = new vscode.Diagnostic(
