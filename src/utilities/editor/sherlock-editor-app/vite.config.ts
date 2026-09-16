@@ -6,6 +6,7 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	worker: {
+		format: "es",
 		rollupOptions: {
 			output: {
 				// Share assets emitted by both the editor and its worker builds.
@@ -14,6 +15,7 @@ export default defineConfig({
 		},
 	},
 	build: {
+		target: "es2022",
 		outDir: "build",
 		rollupOptions: {
 			output: {
