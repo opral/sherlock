@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.4.6
+
+### Patch Changes
+
+- 7ad290d: Upgrade the inlang SDK to 3.0.6 with Lix 0.17.0.
+
 ## 2.4.5
 
 ### Patch Changes
