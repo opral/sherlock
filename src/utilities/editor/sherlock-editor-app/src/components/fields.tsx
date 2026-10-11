@@ -41,6 +41,8 @@ export function PatternField({
 	callbacks.current = { onChange, onBlur }
 
 	useLayoutEffect(() => {
+		// a new element has no text yet (React's StrictMode mounts twice in development)
+		given.current = undefined
 		const element = new InlangPatternEditor()
 		element.addEventListener("change", (event) => {
 			event.stopPropagation()

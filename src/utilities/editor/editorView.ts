@@ -102,8 +102,13 @@ export function editorView(args: {
 		panel.webview.html = getHtmlForWebview(panel.webview)
 	}
 
-	/** Sends the bundle as stored, and the settings, to the webview. */
-	async function postData() {
+	/**
+	 * Sends the bundle as stored, and the settings, to the webview. `reset` makes the webview show
+	 * the stored text even where it shows other text that was typed (after a failed save).
+	 */
+	async function postData(options: { reset?: boolean } = {}) {
+		// queued edits first: a bundle without them would hide a form that was just added
+		await pendingUpdate
 		const data = await lease.runTask(async () => ({
 			bundle: await selectBundleById(lease.project, bundleId),
 			settings: await lease.project.settings.get(),
@@ -112,7 +117,9 @@ export function editorView(args: {
 		await panel?.webview.postMessage({
 			command: "change",
 			data: data.value,
+			reset: options.reset === true,
 		})
+		return data.value
 	}
 
 	/**
@@ -157,21 +164,22 @@ export function editorView(args: {
 					await updateView()
 					return
 				}
-				case "apply-changes":
+				case "apply-changes": {
+					let failed = false
 					await queueMutation(async () => {
 						try {
 							await applyChanges(lease.project.db, message.changes)
 						} catch (error) {
 							console.error("Failed to apply the editor's changes", error)
 							msg(`Couldn't save the edit. ${String(error)}`, "error")
-							// show what is stored again
-							message.persist = true
+							failed = true
 						}
 					})
-					if (message.persist === true) {
-						await updateView()
-					}
+					// after a failed save, show what is stored, also in the field that was typed into
+					if (failed) await postData({ reset: true })
+					else if (message.persist === true) await updateView()
 					return
+				}
 				case "open-cloud":
 					showCloudPanel({ source: "editor" })
 					return
@@ -382,5 +390,6 @@ export function editorView(args: {
 		setBundleId,
 		getBundleId,
 		dispose,
+		isDisposed: () => disposed,
 	}
 }

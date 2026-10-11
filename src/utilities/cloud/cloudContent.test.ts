@@ -28,10 +28,16 @@ describe("cloud hint", () => {
 		expect(machineTranslateCommand("./project.inlang")).toBe(
 			"npx @inlang/cli machine translate --project ./project.inlang"
 		)
-		expect(machineTranslateCommand("./my app/project.inlang")).toBe(
+		expect(machineTranslateCommand("./my app/it's/project.inlang", "darwin")).toBe(
+			"npx @inlang/cli machine translate --project './my app/it'\\''s/project.inlang'"
+		)
+		expect(machineTranslateCommand("./my app/project.inlang", "win32")).toBe(
 			'npx @inlang/cli machine translate --project "./my app/project.inlang"'
 		)
-		expect(machineTranslateCommand(undefined)).toBe("npx @inlang/cli machine translate")
+		// the CLI requires --project
+		expect(machineTranslateCommand(undefined)).toBe(
+			"npx @inlang/cli machine translate --project ./project.inlang"
+		)
 	})
 
 	it("contributes the commands", () => {

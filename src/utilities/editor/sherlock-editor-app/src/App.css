@@ -13,7 +13,10 @@
 	--inlang-text-muted: var(--vscode-descriptionForeground);
 	--inlang-text-subtle: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
 	--inlang-border: var(--vscode-editorWidget-border, var(--vscode-panel-border));
-	--inlang-border-strong: var(--vscode-focusBorder);
+	--inlang-border-strong: var(
+		--vscode-contrastBorder,
+		var(--vscode-input-border, var(--vscode-panel-border))
+	);
 	--inlang-surface: var(--vscode-editor-background);
 	--inlang-surface-muted: var(--vscode-editorWidget-background);
 	--inlang-hover: var(--vscode-list-hoverBackground);
@@ -316,10 +319,19 @@ select.input {
 	text-overflow: ellipsis;
 }
 
+/* the text of the field never runs under the button */
+.field-row.with-hint .field {
+	--inlang-pattern-padding: 4px 160px 4px 6px;
+}
+
 /* a narrow field shows only the icon (the title says what it does) */
 @container (max-width: 420px) {
 	.machine-translate-label {
 		display: none;
+	}
+
+	.field-row.with-hint .field {
+		--inlang-pattern-padding: 4px 34px 4px 6px;
 	}
 }
 

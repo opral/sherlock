@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/editor.tsx","./src/components/selectorpanel.tsx","./src/components/translationproblems.tsx","./src/components/fields.tsx","./src/components/icons.tsx","./src/lib/diffbundles.test.ts","./src/lib/diffbundles.ts","./src/lib/lixstub.ts","./src/problems/translationproblems.ts","./src/utils/vscode.ts"],"version":"5.7.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/editor.tsx","./src/utils/vscode.ts"],"version":"5.7.3"}

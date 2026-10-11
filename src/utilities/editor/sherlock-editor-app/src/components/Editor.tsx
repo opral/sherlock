@@ -6,6 +6,7 @@ import type { BundleNested, Pattern, ProjectSettings } from "@inlang/sdk"
 import { v7 as uuidv7 } from "uuid"
 import { vscode } from "../utils/vscode.js"
 import { diffBundles } from "../lib/diffBundles.js"
+import { updateDeclarations } from "../lib/declarations.js"
 import { MessageForms, PatternField, type EditorMessage, type EditorVariant } from "./fields.js"
 import { TranslationProblems } from "./TranslationProblems.js"
 import { SelectorPanel } from "./SelectorPanel.js"
@@ -28,19 +29,6 @@ function languageName(locale: string) {
 	}
 }
 
-/** Declares the variables a pattern uses that the bundle doesn't know yet, e.g. a typed `{count}`. */
-function declareVariables(bundle: BundleNested, pattern: Pattern): BundleNested["declarations"] {
-	const declarations = [...bundle.declarations]
-	for (const element of pattern) {
-		if (element.type !== "expression" || element.arg.type !== "variable-reference") continue
-		const name = element.arg.name
-		if (!declarations.some((declaration) => declaration.name === name)) {
-			declarations.push({ type: "input-variable", name })
-		}
-	}
-	return declarations
-}
-
 /**
  * The editor of one bundle: a row per language with the translation, its forms (plural, select)
  * and the problems the SDK's checks find, plus "Plural & select" for the whole bundle.
@@ -51,9 +39,12 @@ function declareVariables(bundle: BundleNested, pattern: Pattern): BundleNested[
 export default function Editor({
 	bundle: stored,
 	settings,
+	resetKey = 0,
 }: {
 	bundle: BundleNested
 	settings: ProjectSettings
+	/** changes when the fields must show the stored text again, e.g. after a failed save */
+	resetKey?: number
 }) {
 	const [bundle, setBundle] = useState(stored)
 	const current = useRef(stored)
@@ -68,6 +59,8 @@ export default function Editor({
 	const [showSelectors, setShowSelectors] = useState(false)
 	const [error, setError] = useState<string>()
 	const fields = useRef(new Map<string, InlangPatternEditor>())
+	// input variables this editor declared for a typed `{name}`
+	const declaredHere = useRef(new Set<string>())
 	const focusVariant = useRef<string>(undefined)
 	useLayoutEffect(() => {
 		const field = focusVariant.current && fields.current.get(focusVariant.current)
@@ -153,7 +146,10 @@ export default function Editor({
 			...m,
 			variants: m.variants.map((v) => (v.id === variantId ? { ...v, pattern } : v)),
 		}))
-		commit({ ...next, declarations: declareVariables(next, pattern) }, { persist: false })
+		commit(
+			{ ...next, declarations: updateDeclarations(next, pattern, declaredHere.current) },
+			{ persist: false }
+		)
 	}
 
 	const addForm = (message: EditorMessage, matches: EditorVariant["matches"]) => {
@@ -274,9 +270,9 @@ export default function Editor({
 									/>
 								)}
 								{variant && (
-									<div className="field-row">
+									<div className={showMachineTranslate ? "field-row with-hint" : "field-row"}>
 										<PatternField
-											key={variant.id}
+											key={`${variant.id}:${resetKey}`}
 											variant={variant}
 											declarations={bundle.declarations}
 											label={`${name ?? locale} translation`}

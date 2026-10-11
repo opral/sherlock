@@ -46,12 +46,20 @@ export const CLOUD_FEATURES: {
 export const CLOUD_INTEREST_FORM_URL =
 	"https://docs.google.com/forms/d/e/1FAIpQLSdwui1r1rFu1AXMPKa-g2ggDHOTvNFrmrxWDubaaYLHv8_4Mg/viewform?usp=pp_url&entry.14901479=Sherlock"
 
-/** The inlang CLI command that machine translates a project locally. */
-export function machineTranslateCommand(projectPath: string | undefined) {
-	const project = projectPath ? ` --project ${quoteArgument(projectPath)}` : ""
-	return `npx @inlang/cli machine translate${project}`
+/**
+ * The inlang CLI command that machine translates a project locally. `--project` is required by
+ * the CLI: without an active project, the default location `./project.inlang` is used.
+ */
+export function machineTranslateCommand(
+	projectPath: string | undefined,
+	platform: NodeJS.Platform = process.platform
+) {
+	return `npx @inlang/cli machine translate --project ${quoteArgument(projectPath ?? "./project.inlang", platform)}`
 }
 
-function quoteArgument(value: string) {
-	return /^[\w./\\:@-]+$/.test(value) ? value : `"${value.replace(/(["\\$`])/g, "\\$1")}"`
+/** Quotes a path for the shell of VS Code's terminal: single quotes on POSIX, double on Windows. */
+function quoteArgument(value: string, platform: NodeJS.Platform) {
+	if (/^[\w./\\:@-]+$/.test(value)) return value
+	if (platform === "win32") return `"${value.replace(/"/g, '""')}"`
+	return `'${value.replace(/'/g, "'\\''")}'`
 }

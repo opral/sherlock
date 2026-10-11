@@ -16,7 +16,13 @@ export async function openCloudInterestForm() {
 
 /** The active project's path relative to the workspace folder, for the CLI command. */
 function relativeProjectPath() {
-	const projectPath = getProjectRuntime().activeProject()?.path
+	let projectPath: string | undefined
+	try {
+		projectPath = getProjectRuntime().activeProject()?.path
+	} catch {
+		// no project runtime (e.g. activation failed): the CLI's default location
+		return undefined
+	}
 	const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
 	if (!projectPath) return undefined
 	if (!workspaceFolder) return projectPath
@@ -31,7 +37,13 @@ function relativeProjectPath() {
  * button to the interest form, and the inlang CLI for machine translation on your machine today.
  */
 export function showCloudPanel(_args: { source: CloudHintSource }) {
+	// the active project can change while the page is open: the command is read when it is used
+	const currentCommand = () => machineTranslateCommand(relativeProjectPath())
 	if (panel) {
+		panel.webview.html = getCloudHtml({
+			command: currentCommand(),
+			cspSource: panel.webview.cspSource,
+		})
 		panel.reveal(vscode.ViewColumn.Active)
 		return panel
 	}
@@ -41,9 +53,15 @@ export function showCloudPanel(_args: { source: CloudHintSource }) {
 		vscode.ViewColumn.Active,
 		{ enableScripts: true, localResourceRoots: [] }
 	)
-	const command = machineTranslateCommand(relativeProjectPath())
-	panel.webview.html = getCloudHtml({ command, cspSource: panel.webview.cspSource })
+	panel.onDidDispose(() => {
+		panel = undefined
+	})
+	panel.webview.html = getCloudHtml({
+		command: currentCommand(),
+		cspSource: panel.webview.cspSource,
+	})
 	panel.webview.onDidReceiveMessage(async (message: { command?: string }) => {
+		const command = currentCommand()
 		switch (message?.command) {
 			case "open-form":
 				await openCloudInterestForm()
@@ -63,9 +81,6 @@ export function showCloudPanel(_args: { source: CloudHintSource }) {
 				return
 			}
 		}
-	})
-	panel.onDidDispose(() => {
-		panel = undefined
 	})
 	return panel
 }

@@ -4,6 +4,9 @@ import { editorView } from "../utilities/editor/editorView.js"
 import type { InlangProject } from "@inlang/sdk"
 import { getProjectRuntime, type ActiveProjectLease } from "../utilities/project/projectRuntime.js"
 
+/** The open editors by project and bundle id: a message has one editor, so edits never race. */
+const openEditors = new Map<string, ReturnType<typeof editorView>>()
+
 export function createOpenEditorViewCallback(args: {
 	extensionUri: Uri
 	activeProject?: () => ActiveProjectLease<InlangProject> | undefined
@@ -15,6 +18,13 @@ export function createOpenEditorViewCallback(args: {
 		const lease = activeProject()
 
 		if (!lease) return
+
+		const key = `${lease.path}\u0000${commandArgs.bundleId}`
+		const open = openEditors.get(key)
+		if (open?.isDisposed?.() === false) {
+			await open.createOrShowPanel()
+			return
+		}
 
 		const editor = editorView({
 			extensionUri: args.extensionUri,
@@ -30,6 +40,7 @@ export function createOpenEditorViewCallback(args: {
 			await editor.dispose()
 			return
 		}
+		openEditors.set(key, editor)
 		await editor.createOrShowPanel()
 
 		capture({

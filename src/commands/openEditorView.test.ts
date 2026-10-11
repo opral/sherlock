@@ -55,6 +55,30 @@ describe("Open Editor command", () => {
 		})
 	})
 
+	it("reveals the open editor of a bundle instead of opening a second one", async () => {
+		const editor = {
+			createOrShowPanel: vi.fn(async () => undefined),
+			dispose: vi.fn(async () => undefined),
+			isDisposed: vi.fn(() => false),
+		}
+		const lease = { path: "/workspace/reuse.inlang", own: vi.fn(() => true) }
+		vi.mocked(editorView).mockReturnValue(editor as never)
+		const callback = createOpenEditorViewCallback({
+			extensionUri: { fsPath: "/extension" } as vscode.Uri,
+			activeProject: () => lease as never,
+		})
+
+		await callback({ bundleId: "reuse" })
+		await callback({ bundleId: "reuse" })
+		expect(editorView).toHaveBeenCalledOnce()
+		expect(editor.createOrShowPanel).toHaveBeenCalledTimes(2)
+
+		// a closed editor is opened again
+		editor.isDisposed.mockReturnValue(true)
+		await callback({ bundleId: "reuse" })
+		expect(editorView).toHaveBeenCalledTimes(2)
+	})
+
 	it("does nothing when there is no active project", async () => {
 		const callback = createOpenEditorViewCallback({
 			extensionUri: { fsPath: "/extension" } as vscode.Uri,

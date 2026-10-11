@@ -88,12 +88,38 @@ describe("editorView", () => {
 		expect(panel.webview.postMessage).toHaveBeenLastCalledWith({
 			command: "change",
 			data: { bundle: { id: "welcome", messages: [] }, settings: { locales: ["en"] } },
+			reset: false,
 		})
 
 		const changes = [{ entity: "variant", entityId: "v", newData: { id: "v" } }]
 		await mocks.receiveMessage!({ command: "apply-changes", changes, persist: true })
 		expect(applyChanges).toHaveBeenCalledWith(project.db, changes)
 		expect(saveProject).toHaveBeenCalledTimes(1)
+	})
+
+	it("shows the stored text again after a failed save", async () => {
+		vi.mocked(applyChanges).mockRejectedValueOnce(new Error("constraint"))
+		const project = { db: {}, settings: { get: vi.fn(async () => ({ locales: ["en"] })) } }
+		const view = editorView({
+			extensionUri: {} as never,
+			initialBundleId: "welcome",
+			lease: {
+				path: "/workspace/project.inlang",
+				project,
+				isCurrent: () => true,
+				runTask: async <T>(task: () => Promise<T>) => ({
+					status: "completed",
+					value: await task(),
+				}),
+			} as any,
+		})
+		await view.createOrShowPanel()
+		const panel = vi.mocked(vscode.window.createWebviewPanel).mock.results.at(-1)!.value
+		await mocks.receiveMessage!({ command: "apply-changes", changes: [], persist: false })
+		expect(panel.webview.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({ command: "change", reset: true })
+		)
+		expect(saveProject).not.toHaveBeenCalled()
 	})
 
 	it("does not export an unchanged project during session disposal", async () => {
