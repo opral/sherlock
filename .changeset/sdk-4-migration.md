@@ -9,3 +9,4 @@ Upgrade to the inlang SDK 4.0 and the editor component 13.
 - Deleting a message deletes its translations and variants in one transaction.
 - New messages and variants get uuid v7 ids, so forms keep the order in which they were added.
 - "Create project" sets up the message-format plugin (`messages/{locale}.json`) and the m-function matcher, instead of a project without plugins.
+- The edit command (pencil in the hover) writes the edit to the translation files right away. Before, the edit stayed in memory until the next save and was lost on reload.
