@@ -16,7 +16,7 @@ import type { InlangProject } from "@inlang/sdk"
 
 vi.mock("vscode", () => ({
 	window: {
-		createStatusBarItem: () => ({ show: vi.fn(), dispose: vi.fn() }),
+		createStatusBarItem: () => ({ show: vi.fn(), hide: vi.fn(), dispose: vi.fn() }),
 		showInformationMessage: vi.fn(),
 		showWarningMessage: vi.fn(),
 		showErrorMessage: vi.fn(),
