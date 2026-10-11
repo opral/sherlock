@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { editorView } from "./editorView.js"
 import { saveProject } from "../../main.js"
 import { saveProjectResources } from "../project/projectResourceSynchronization.js"
-import { handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { applyChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import * as vscode from "vscode"
 import { createMessage } from "./helper/createMessage.js"
 import { selectBundleById } from "../project/selectBundleById.js"
 
@@ -42,6 +43,7 @@ vi.mock("./helper/getUri.js", () => ({ getUri: vi.fn() }))
 vi.mock("./helper/getNonce.js", () => ({ getNonce: vi.fn(() => "nonce") }))
 vi.mock("./helper/handleBundleUpdate.js", () => ({
 	handleUpdateBundle: vi.fn(async () => undefined),
+	applyChanges: vi.fn(async () => undefined),
 }))
 vi.mock("./helper/createMessage.js", () => ({
 	createMessage: vi.fn(async () => undefined),
@@ -61,6 +63,63 @@ describe("editorView", () => {
 		vi.clearAllMocks()
 		mocks.receiveMessage = undefined
 		vi.mocked(saveProject).mockResolvedValue("saved")
+	})
+
+	it("sends the stored bundle once the page is ready, and writes the editor's changes", async () => {
+		const project = { db: {}, settings: { get: vi.fn(async () => ({ locales: ["en"] })) } }
+		const view = editorView({
+			extensionUri: {} as never,
+			initialBundleId: "welcome",
+			lease: {
+				path: "/workspace/project.inlang",
+				project,
+				isCurrent: () => true,
+				runTask: async <T>(task: () => Promise<T>) => ({
+					status: "completed",
+					value: await task(),
+				}),
+			} as any,
+		})
+		await view.createOrShowPanel()
+		const panel = vi.mocked(vscode.window.createWebviewPanel).mock.results.at(-1)!.value
+		// listening before the page loads, so that "ready" is never missed
+		expect(mocks.receiveMessage).toBeDefined()
+		await mocks.receiveMessage!({ command: "ready" })
+		expect(panel.webview.postMessage).toHaveBeenLastCalledWith({
+			command: "change",
+			data: { bundle: { id: "welcome", messages: [] }, settings: { locales: ["en"] } },
+			reset: false,
+		})
+
+		const changes = [{ entity: "variant", entityId: "v", newData: { id: "v" } }]
+		await mocks.receiveMessage!({ command: "apply-changes", changes, persist: true })
+		expect(applyChanges).toHaveBeenCalledWith(project.db, changes)
+		expect(saveProject).toHaveBeenCalledTimes(1)
+	})
+
+	it("shows the stored text again after a failed save", async () => {
+		vi.mocked(applyChanges).mockRejectedValueOnce(new Error("constraint"))
+		const project = { db: {}, settings: { get: vi.fn(async () => ({ locales: ["en"] })) } }
+		const view = editorView({
+			extensionUri: {} as never,
+			initialBundleId: "welcome",
+			lease: {
+				path: "/workspace/project.inlang",
+				project,
+				isCurrent: () => true,
+				runTask: async <T>(task: () => Promise<T>) => ({
+					status: "completed",
+					value: await task(),
+				}),
+			} as any,
+		})
+		await view.createOrShowPanel()
+		const panel = vi.mocked(vscode.window.createWebviewPanel).mock.results.at(-1)!.value
+		await mocks.receiveMessage!({ command: "apply-changes", changes: [], persist: false })
+		expect(panel.webview.postMessage).toHaveBeenLastCalledWith(
+			expect.objectContaining({ command: "change", reset: true })
+		)
+		expect(saveProject).not.toHaveBeenCalled()
 	})
 
 	it("does not export an unchanged project during session disposal", async () => {
@@ -219,6 +278,8 @@ describe("editorView", () => {
 			} as any,
 		})
 		await view.createOrShowPanel()
+		// the page asks for its data once it has loaded
+		await mocks.receiveMessage?.({ command: "ready" })
 		vi.mocked(selectBundleById).mockReturnValueOnce(bundleQuery as never)
 		const firstChange = mocks.receiveMessage?.({
 			command: "change",

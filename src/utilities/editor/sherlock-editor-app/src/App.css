@@ -1,161 +1,479 @@
-@import "tailwindcss";
-@import "tailwindcss/utilities";
+/*
+ * The editor is built from the composable inlang components (<inlang-pattern-editor>,
+ * <inlang-message-forms>). They are themed through their public --inlang-* custom properties,
+ * mapped to VS Code's theme colors (--vscode-*), so the editor follows light, dark and
+ * high-contrast themes like the rest of VS Code.
+ */
+:root {
+	--sherlock-border: var(--vscode-input-border, var(--vscode-panel-border, transparent));
+	--sherlock-row-border: var(--vscode-editorGroup-border, var(--vscode-panel-border));
+	--sherlock-radius: 2px;
+
+	--inlang-text: var(--vscode-foreground);
+	--inlang-text-muted: var(--vscode-descriptionForeground);
+	--inlang-text-subtle: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+	--inlang-border: var(--vscode-editorWidget-border, var(--vscode-panel-border));
+	--inlang-border-strong: var(
+		--vscode-contrastBorder,
+		var(--vscode-input-border, var(--vscode-panel-border))
+	);
+	--inlang-surface: var(--vscode-editor-background);
+	--inlang-surface-muted: var(--vscode-editorWidget-background);
+	--inlang-hover: var(--vscode-list-hoverBackground);
+	--inlang-accent: var(--vscode-focusBorder);
+	--inlang-accent-soft: var(--vscode-list-inactiveSelectionBackground);
+	--inlang-variable-color: var(--vscode-textLink-foreground);
+	--inlang-variable-background: var(--vscode-textCodeBlock-background);
+	--inlang-markup-color: var(--vscode-descriptionForeground);
+	--inlang-markup-background: var(--vscode-textCodeBlock-background);
+	--inlang-warning: var(--vscode-editorWarning-foreground);
+	--inlang-link-color: var(--vscode-textLink-foreground);
+	--inlang-font-mono: var(--vscode-editor-font-family, ui-monospace, monospace);
+	--inlang-token-font-size: 0.92em;
+	--inlang-token-radius: 3px;
+	--inlang-radius: 4px;
+	--inlang-radius-small: var(--sherlock-radius);
+	--inlang-font-size-large: var(--vscode-font-size, 13px);
+	--inlang-font-size: var(--vscode-font-size, 13px);
+	--inlang-font-size-small: 12px;
+	--inlang-font-size-caption: 11px;
+	--inlang-control-height: 26px;
+	--inlang-forms-row-min-height: 28px;
+	--inlang-forms-row-padding: 4px 8px;
+	--inlang-forms-label-width: 96px;
+	--inlang-search-highlight: var(--vscode-editor-findMatchHighlightBackground);
+
+	--inlang-pattern-padding: 4px 6px;
+	--inlang-pattern-min-height: 28px;
+	--inlang-pattern-font-size: var(--vscode-font-size, 13px);
+	--inlang-pattern-line-height: 18px;
+	--inlang-pattern-color: var(--vscode-input-foreground);
+	--inlang-pattern-background: var(--vscode-input-background);
+	--inlang-pattern-hover-background: var(--vscode-input-background);
+	--inlang-pattern-focus-ring: none;
+	--inlang-pattern-border-width: 1px;
+	--inlang-pattern-border-color: var(--sherlock-border);
+	--inlang-pattern-hover-border-color: var(--sherlock-border);
+	--inlang-pattern-focus-border-color: var(--vscode-focusBorder);
+	--inlang-pattern-border-radius: var(--sherlock-radius);
+
+	--inlang-popover-font-size: var(--vscode-font-size, 13px);
+	--inlang-popover-radius: 4px;
+	--inlang-popover-shadow: 0 2px 8px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.36));
+	--inlang-toolbar-background: var(--vscode-editorWidget-background);
+	--inlang-toolbar-color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+}
+
+/* High contrast themes draw every control with the contrast border. */
+body.vscode-high-contrast,
+body.vscode-high-contrast-light {
+	--sherlock-border: var(--vscode-contrastBorder);
+	--sherlock-row-border: var(--vscode-contrastBorder);
+	--inlang-border: var(--vscode-contrastBorder);
+	--inlang-pattern-hover-border-color: var(
+		--vscode-contrastActiveBorder,
+		var(--vscode-contrastBorder)
+	);
+	--inlang-accent-soft: transparent;
+}
 
 * {
-	background-color: var(--vscode-editor-background);
-	color: var(--vscode-editor-foreground);
+	box-sizing: border-box;
 }
 
-.inlang-pattern-editor-contenteditable {
-	background-color: var(--vscode-editor-background) !important;
-	color: var(--vscode-editor-foreground) !important;
+body {
+	margin: 0;
+	padding: 0;
+	background: var(--vscode-editor-background);
+	color: var(--vscode-foreground);
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size, 13px);
+	line-height: 1.4;
 }
 
-.inlang-pattern-editor-contenteditable:hover {
-	background-color: var(--vscode-editor-hoverBackground) !important;
+button,
+input,
+select {
+	font: inherit;
 }
 
-.inlang-pattern-editor-placeholder {
-	color: var(--vscode-editor-placeholderForeground) !important;
+.status {
+	padding: 16px 20px;
+	color: var(--vscode-descriptionForeground);
 }
 
-inlang-variant {
-	--sl-input-border-color: var(--vscode-input-border);
-	--sl-input-background-color: var(--vscode-input-background);
-	--sl-input-background-color-focus: var(--vscode-input-background);
-	--sl-input-background-color-hover: var(--vscode-input-hoverBackground);
-	--sl-input-border-color-hover: var(--vscode-input-hoverBorder);
-	--sl-input-color: var(--vscode-input-foreground);
-	--sl-input-color-focus: var(--vscode-input-foreground);
-	--sl-input-color-hover: var(--vscode-input-foreground);
+.editor {
+	max-width: 960px;
+	padding: 12px 20px 32px;
 }
 
-inlang-message {
-	--sl-input-border-color: var(--vscode-input-border);
-	--sl-input-background-color: var(--vscode-input-background);
-	--sl-input-background-color-focus: var(--vscode-input-background);
-	--sl-input-background-color-hover: var(--vscode-input-hoverBackground);
-	--sl-input-border-color-hover: var(--vscode-input-hoverBorder);
-	--sl-input-color: var(--vscode-input-foreground);
-	--sl-input-color-focus: var(--vscode-input-foreground);
-	--sl-input-color-hover: var(--vscode-input-foreground);
-	--sl-input-background-color-disabled: var(--vscode-input-disabledBackground);
-	--sl-input-placeholder-color: var(--vscode-input-placeholderForeground);
+.editor-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--sherlock-row-border);
 }
 
-inlang-bundle {
-	--sl-input-border-color: var(--vscode-input-border);
-	--sl-input-background-color: var(--vscode-input-background);
-	--sl-input-background-color-focus: var(--vscode-input-background);
-	--sl-input-background-color-hover: var(--vscode-input-hoverBackground);
-	--sl-input-border-color-hover: var(--vscode-input-hoverBorder);
-	--sl-input-color: var(--vscode-input-foreground);
-	--sl-input-color-focus: var(--vscode-input-foreground);
-	--sl-input-color-hover: var(--vscode-input-foreground);
-	--sl-input-background-color-disabled: var(--vscode-input-disabledBackground);
-	--sl-input-placeholder-color: var(--vscode-input-placeholderForeground);
+.bundle-id {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: 14px;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-inlang-bundle-action {
-	--sl-button-border-color: var(--vscode-button-border);
-	--sl-button-background-color: var(--vscode-button-background);
-	--sl-button-background-color-hover: var(--vscode-button-hoverBackground);
-	--sl-button-background-color-active: var(--vscode-button-activeBackground);
-	--sl-button-color: var(--vscode-button-foreground);
-	--sl-button-color-hover: var(--vscode-button-foreground);
-	--sl-button-color-active: var(--vscode-button-foreground);
-	--sl-menu-background-color: var(--vscode-dropdown-background);
-	--sl-menu-border-color: var(--vscode-dropdown-border);
-	--sl-menu-color: var(--vscode-dropdown-foreground);
-	--sl-menu-box-shadow: var(--vscode-dropdown-shadow);
-	--sl-menu-item-background-color: var(--vscode-dropdown-background);
-	--sl-menu-item-border-color: var(--vscode-dropdown-border);
-	--sl-menu-item-color: var(--vscode-dropdown-foreground);
-	--sl-menu-item-hover-background-color: var(--vscode-dropdown-hoverBackground);
-	--sl-menu-item-hover-color: var(--vscode-dropdown-hoverForeground);
+.bundle-id::before {
+	content: "# ";
+	color: var(--vscode-descriptionForeground);
 }
 
-inlang-bundle::part(base) {
-	background-color: var(--vscode-editor-background);
+.header-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
-inlang-bundle::slotted(bundle-action):hover {
-	background-color: var(--vscode-editor-hoverBackground);
+/* Buttons like VS Code's secondary buttons and toolbar icons. */
+.button-secondary {
+	height: 26px;
+	padding: 0 10px;
+	border: 1px solid var(--vscode-button-border, transparent);
+	border-radius: var(--sherlock-radius);
+	background: var(--vscode-button-secondaryBackground);
+	color: var(--vscode-button-secondaryForeground);
+	cursor: pointer;
+	white-space: nowrap;
 }
 
-sl-menu {
-	--sl-menu-background-color: var(--vscode-dropdown-background);
-	--sl-menu-border-color: var(--vscode-dropdown-border);
-	--sl-menu-color: var(--vscode-dropdown-foreground);
-	--sl-menu-box-shadow: var(--vscode-dropdown-shadow);
-	background-color: var(--sl-menu-background-color);
-	border: 1px solid var(--sl-menu-border-color);
-	color: var(--sl-menu-color);
-	box-shadow: var(--sl-menu-box-shadow);
+.button-secondary:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
 }
 
-sl-menu-item {
-	--sl-menu-item-background-color: var(--vscode-dropdown-background);
-	--sl-menu-item-border-color: var(--vscode-dropdown-border);
-	--sl-menu-item-color: var(--vscode-dropdown-foreground);
-	--sl-menu-item-hover-background-color: var(--vscode-dropdown-hoverBackground);
-	--sl-menu-item-hover-color: var(--vscode-dropdown-hoverForeground);
-	background-color: var(--sl-menu-item-background-color);
-	border-bottom: 1px solid var(--sl-menu-item-border-color);
-	color: var(--sl-menu-item-color);
+.button-secondary.pressed {
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
 }
 
-sl-menu-item:hover {
-	background-color: var(--sl-menu-item-hover-background-color);
-	color: var(--sl-menu-item-hover-color);
+.icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--vscode-icon-foreground, var(--vscode-foreground));
+	cursor: pointer;
 }
 
-sl-menu-item:focus {
-	background-color: var(--sl-menu-item-hover-background-color);
-	color: var(--sl-menu-item-hover-color);
+.icon-button:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+	outline: 1px dashed var(--vscode-toolbar-hoverOutline, transparent);
 }
 
-sl-menu-item:focus-visible {
-	background-color: var(--sl-menu-item-hover-background-color);
-	color: var(--sl-menu-item-hover-color);
+.icon-button.danger:hover {
+	color: var(--vscode-errorForeground);
 }
 
-sl-menu-item::part(label) {
-	color: var(--sl-menu-item-color);
+:is(button, input, select, a):focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
 }
 
-sl-menu-item:hover::part(label) {
-	color: var(--sl-menu-item-hover-color);
+.icon {
+	display: block;
+	flex: none;
 }
 
-.add-selector-dialog::part(panel) {
-	padding: 2rem;
-	background-color: var(--vscode-editor-background);
-	color: var(--vscode-editor-foreground);
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.add-selector-dialog::part(title) {
-	font-size: 1rem;
-}
-
-inlang-add-selector {
-	--sl-input-border-color: var(--vscode-input-border);
-	--sl-input-background-color: var(--vscode-input-background);
-	--sl-input-background-color-focus: var(--vscode-input-background);
-	--sl-input-background-color-hover: var(--vscode-input-hoverBackground);
-	--sl-input-border-color-hover: var(--vscode-input-hoverBorder);
-	--sl-input-color: var(--vscode-input-foreground);
-	--sl-input-color-focus: var(--vscode-input-foreground);
-	--sl-input-color-hover: var(--vscode-input-foreground);
-}
-
-inlang-add-selector sl-option::part(base) {
-	background-color: var(--vscode-input-background);
+.input {
+	height: 26px;
+	padding: 0 6px;
+	border: 1px solid var(--sherlock-border);
+	border-radius: var(--sherlock-radius);
+	background: var(--vscode-input-background);
 	color: var(--vscode-input-foreground);
+	min-width: 0;
 }
 
-inlang-message::part(selector) {
-	background-color: var(--vscode-editor-background);
-	color: var(--vscode-editor-foreground);
+select.input {
+	background: var(--vscode-dropdown-background);
+	color: var(--vscode-dropdown-foreground);
+	border-color: var(--vscode-dropdown-border, var(--sherlock-border));
+}
+
+.input::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.input:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.input-small {
+	width: 150px;
+}
+
+.link {
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+}
+
+.link:hover {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+.error {
+	margin: 10px 0 0;
+	padding: 6px 8px;
+	border: 1px solid var(--vscode-inputValidation-errorBorder);
+	background: var(--vscode-inputValidation-errorBackground);
+	color: var(--vscode-errorForeground);
+	border-radius: var(--sherlock-radius);
+}
+
+/* one row per language: code | translation */
+.row {
+	display: grid;
+	grid-template-columns: 72px minmax(0, 1fr);
+	gap: 8px;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--sherlock-row-border);
+}
+
+.row-locale {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 28px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.tag {
+	padding: 0 5px;
+	border-radius: 8px;
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 16px;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+}
+
+.row-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.field-row {
+	position: relative;
+	container-type: inline-size;
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.field {
+	flex: 1;
+	min-width: 0;
+}
+
+.row-slot {
+	flex: none;
+	width: 26px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+}
+
+/* inside the empty field, at its right end, so that every field is equally wide */
+.machine-translate {
+	position: absolute;
+	top: 3px;
+	right: 4px;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 22px;
+	padding: 0 6px;
+	border: none;
+	border-radius: var(--sherlock-radius);
+	background: transparent;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* the text of the field never runs under the button */
+.field-row.with-hint .field {
+	--inlang-pattern-padding: 4px 160px 4px 6px;
+}
+
+/* a narrow field shows only the icon (the title says what it does) */
+@container (max-width: 420px) {
+	.machine-translate-label {
+		display: none;
+	}
+
+	.field-row.with-hint .field {
+		--inlang-pattern-padding: 4px 34px 4px 6px;
+	}
+}
+
+.machine-translate:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+	color: var(--vscode-textLink-activeForeground);
+}
+
+.problems {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.problem {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	color: var(--vscode-editorWarning-foreground);
+}
+
+.problem .link {
+	font-size: inherit;
+}
+
+/* Plural & select */
+.selectors {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	border: 1px solid var(--inlang-border);
+	border-radius: 4px;
+	background: var(--vscode-editorWidget-background);
+}
+
+.selector-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.selector {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.selector-head,
+.selector-values,
+.add-selector,
+.inline-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.token {
+	font-family: var(--inlang-font-mono);
+	color: var(--inlang-variable-color);
+}
+
+.selector-kind,
+.label,
+.hint {
+	color: var(--vscode-descriptionForeground);
+}
+
+.hint {
+	margin: 0;
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	height: 22px;
+	padding: 0 2px 0 8px;
+	border-radius: 11px;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+	font-size: 12px;
+}
+
+.chip-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: none;
+	border-radius: 9px;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.chip-remove:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+
+.chip-remove .icon {
+	width: 12px;
+	height: 12px;
+}
+
+.segmented {
+	display: inline-flex;
+	border: 1px solid var(--sherlock-border);
+	border-radius: var(--sherlock-radius);
+	overflow: hidden;
+}
+
+.segment {
+	height: 24px;
+	padding: 0 10px;
+	border: none;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	cursor: pointer;
+}
+
+.segment + .segment {
+	border-left: 1px solid var(--sherlock-border);
+}
+
+.segment.selected {
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+body.vscode-high-contrast :is(.tag, .chip),
+body.vscode-high-contrast-light :is(.tag, .chip) {
+	border: 1px solid var(--vscode-contrastBorder);
 }

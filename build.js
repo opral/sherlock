@@ -34,11 +34,6 @@ const packagesToCopy = [
 		dest: "./assets/settings-component.js",
 		transpile: false,
 	},
-	{
-		src: "node_modules/@inlang/editor-component/dist/bundled/index.js",
-		dest: "./assets/editor-component.js",
-		transpile: false,
-	},
 ]
 
 // Copy complete directory to assets

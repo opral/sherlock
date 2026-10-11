@@ -8,7 +8,8 @@ import { msg } from "../messages/msg.js"
 import type { ChangeEventDetail } from "@inlang/editor-component"
 import { deleteVariant } from "./helper/deleteVariant.js"
 import { deleteBundleNested } from "./helper/deleteBundleNested.js"
-import { handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { applyChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { showCloudPanel } from "../cloud/cloudView.js"
 import { createMessage } from "./helper/createMessage.js"
 import { saveProject } from "../../main.js"
 import { saveProjectResources } from "../project/projectResourceSynchronization.js"
@@ -90,38 +91,35 @@ export function editorView(args: {
 		// Listen to panel and load state when it's visible
 		panel.onDidChangeViewState(
 			async (e) => {
-				if (e.webviewPanel.visible) {
-					const data = await lease.runTask(async () => ({
-						bundle: await selectBundleById(lease.project, bundleId),
-						settings: await lease.project.settings.get(),
-					}))
-					if (data.status !== "completed") return
-					panel?.webview.postMessage({
-						command: "change",
-						data: data.value,
-					})
-				}
+				if (e.webviewPanel.visible) await postData()
 			},
 			null,
 			disposables
 		)
 
-		// Provide the same HTML you had before
+		// Listen before the page loads: it asks for the data once it is ready ("ready")
+		setWebviewMessageListener(panel.webview)
 		panel.webview.html = getHtmlForWebview(panel.webview)
+	}
 
-		// Set initial data
-		const initialData = await lease.runTask(async () => ({
+	/**
+	 * Sends the bundle as stored, and the settings, to the webview. `reset` makes the webview show
+	 * the stored text even where it shows other text that was typed (after a failed save).
+	 */
+	async function postData(options: { reset?: boolean } = {}) {
+		// queued edits first: a bundle without them would hide a form that was just added
+		await pendingUpdate
+		const data = await lease.runTask(async () => ({
 			bundle: await selectBundleById(lease.project, bundleId),
 			settings: await lease.project.settings.get(),
 		}))
-		if (initialData.status !== "completed") return
-		panel.webview.postMessage({
+		if (data.status !== "completed") return
+		await panel?.webview.postMessage({
 			command: "change",
-			data: initialData.value,
+			data: data.value,
+			reset: options.reset === true,
 		})
-
-		// Set up the same message listener logic
-		setWebviewMessageListener(panel.webview)
+		return data.value
 	}
 
 	/**
@@ -133,6 +131,10 @@ export function editorView(args: {
 			const command = message.command
 
 			switch (command) {
+				case "ready":
+					// the page loaded (messages posted before that are lost)
+					await postData()
+					return
 				case "create-message":
 					await queueMutation(() =>
 						createMessage({ db: lease.project.db, message: message.message })
@@ -145,12 +147,41 @@ export function editorView(args: {
 
 					await updateView()
 					return
-				case "delete-bundle":
+				case "delete-bundle": {
+					const choice = await vscode.window.showWarningMessage(
+						`Delete the message "${bundleId}" in every language?`,
+						{
+							modal: true,
+							detail: "Its translations and forms are removed from the translation files.",
+						},
+						"Delete"
+					)
+					if (choice !== "Delete") return
 					await queueMutation(() =>
 						deleteBundleNested({ db: lease.project.db, bundleId: message.id })
 					)
 
 					await updateView()
+					return
+				}
+				case "apply-changes": {
+					let failed = false
+					await queueMutation(async () => {
+						try {
+							await applyChanges(lease.project.db, message.changes)
+						} catch (error) {
+							console.error("Failed to apply the editor's changes", error)
+							msg(`Couldn't save the edit. ${String(error)}`, "error")
+							failed = true
+						}
+					})
+					// after a failed save, show what is stored, also in the field that was typed into
+					if (failed) await postData({ reset: true })
+					else if (message.persist === true) await updateView()
+					return
+				}
+				case "open-cloud":
+					showCloudPanel({ source: "editor" })
 					return
 				case "change":
 					await queueUpdate(message)
@@ -223,6 +254,7 @@ export function editorView(args: {
 			command: "change",
 			data: data.value,
 		})
+		const deleted = data.value.bundle === undefined
 
 		const workspaceFolder = vscode.workspace.workspaceFolders![0]
 		if (workspaceFolder) {
@@ -233,6 +265,8 @@ export function editorView(args: {
 				msg(`Failed to save project. ${String(error)}`, "error")
 			}
 		}
+		// the message was deleted: nothing left to edit
+		if (deleted) panel?.dispose()
 	}
 
 	async function persistEdit() {
@@ -356,5 +390,6 @@ export function editorView(args: {
 		setBundleId,
 		getBundleId,
 		dispose,
+		isDisposed: () => disposed,
 	}
 }

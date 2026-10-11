@@ -44,9 +44,9 @@ class VSCodeAPIWrapper {
 	public onMessage(callback: (message: unknown) => void) {
 		// We do not call `this.vsCodeApi.onMessage` because it doesn't exist.
 		// All messages posted by the extension come through the global 'message' event:
-		window.addEventListener("message", (event) => {
-			callback(event.data)
-		})
+		const listener = (event: MessageEvent) => callback(event.data)
+		window.addEventListener("message", listener)
+		return () => window.removeEventListener("message", listener)
 	}
 
 	/**

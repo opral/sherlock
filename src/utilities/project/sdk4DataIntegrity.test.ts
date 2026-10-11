@@ -10,12 +10,13 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { createRequire } from "node:module"
+import { pathToFileURL } from "node:url"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { InlangProject } from "@inlang/sdk"
 
 vi.mock("vscode", () => ({
 	window: {
-		createStatusBarItem: () => ({ show: vi.fn(), dispose: vi.fn() }),
+		createStatusBarItem: () => ({ show: vi.fn(), hide: vi.fn(), dispose: vi.fn() }),
 		showInformationMessage: vi.fn(),
 		showWarningMessage: vi.fn(),
 		showErrorMessage: vi.fn(),
@@ -46,7 +47,8 @@ vi.mock("./projectRuntime.js", () => ({
 
 const { createProjectResourceSynchronization } = await import("./projectResourceSynchronization.js")
 const { selectBundleById } = await import("./selectBundleById.js")
-const { handleUpdateBundle } = await import("../editor/helper/handleBundleUpdate.js")
+const { handleUpdateBundle, applyChanges } = await import("../editor/helper/handleBundleUpdate.js")
+const { diffBundles } = await import("../editor/sherlock-editor-app/src/lib/diffBundles.js")
 const { createMessage } = await import("../editor/helper/createMessage.js")
 const { deleteVariant } = await import("../editor/helper/deleteVariant.js")
 const { deleteBundleNested } = await import("../editor/helper/deleteBundleNested.js")
@@ -55,6 +57,12 @@ const { createMessageCommand } = await import("../../commands/createMessage.js")
 const vscode = await import("vscode")
 
 const require = createRequire(import.meta.url)
+// the pure bundle helpers of the editor component, without its custom elements
+const { addSelector, addExactNumber } = (await import(
+	pathToFileURL(
+		path.join(path.dirname(require.resolve("@inlang/editor-component")), "helper/addSelector.js")
+	).href
+)) as typeof import("@inlang/editor-component")
 const MESSAGE_FORMAT_URL =
 	"https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4/dist/index.js"
 const MATCHER_URL = "https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2/dist/index.js"
@@ -345,5 +353,101 @@ describe("SDK 4 data integrity", () => {
 
 		expect(await read("messages/en.json")).toBe(EN.replace(`  "zebra": "Zebra",\n`, ""))
 		expect(await read("messages/de.json")).toBe(DE.replace(`  "zebra": "Zebra",\n`, ""))
+	})
+})
+
+describe("editor changes (the webview's diff of a bundle, written by applyChanges)", () => {
+	it("makes a message plural in every language and writes the plural forms", async () => {
+		const before = (await selectBundleById(project, "farewell"))!
+		const plural = addSelector(
+			{
+				...before,
+				declarations: [...before.declarations, { type: "input-variable", name: "count" }],
+			},
+			{ variable: "count", kind: "plural", locale: "en" }
+		)
+		const changes = diffBundles(before, plural)
+		// the bundle's declarations, both messages' selectors and both variants' matches: the
+		// "one" form is added later ("+ Add form")
+		expect(changes.map((change) => change.entity).sort()).toEqual(
+			["bundle", "message", "message", "variant", "variant"].sort()
+		)
+		await applyChanges(project.db, changes)
+		await save()
+
+		const en = JSON.parse(await read("messages/en.json"))
+		expect(en.farewell).toEqual([
+			{
+				declarations: ["input count", "local countPlural = count: plural"],
+				selectors: ["countPlural"],
+				match: { "countPlural=*": "Bye" },
+			},
+		])
+		// the other entries keep their text
+		expect((await read("messages/en.json")).split('"farewell"')[0]).toBe(EN.split('"farewell"')[0])
+	})
+
+	it("adds an exact number (=0) to a plural", async () => {
+		const before = (await selectBundleById(project, "items"))!
+		const next = addExactNumber(before, { selector: "count", value: 0, locale: "en" })
+		await applyChanges(project.db, diffBundles(before, next))
+		const after = (await selectBundleById(project, "items"))!
+		const en = after.messages.find((message) => message.locale === "en")!
+		expect(en.selectors.map((selector) => selector.name)).toEqual([
+			"countPluralExact",
+			"countPlural",
+		])
+		expect(en.variants).toHaveLength(3)
+	})
+
+	it("declares a variable that a translation uses and the bundle doesn't know", async () => {
+		const before = (await selectBundleById(project, "zebra"))!
+		const variant = before.messages.find((message) => message.locale === "de")!.variants[0]!
+		await applyChanges(project.db, [
+			{
+				entity: "variant",
+				entityId: variant.id,
+				newData: {
+					...variant,
+					pattern: [
+						{ type: "text", value: "Zebra " },
+						{ type: "expression", arg: { type: "variable-reference", name: "stripes" } },
+					],
+				},
+			},
+		])
+		const after = (await selectBundleById(project, "zebra"))!
+		expect(after.declarations).toEqual([{ type: "input-variable", name: "stripes" }])
+		await save()
+		expect(JSON.parse(await read("messages/de.json")).zebra).toBe("Zebra {stripes}")
+	})
+
+	it("writes all changes of an edit or none", async () => {
+		const before = (await selectBundleById(project, "zebra"))!
+		const de = before.messages.find((message) => message.locale === "de")!
+		await expect(
+			applyChanges(project.db, [
+				{
+					entity: "variant",
+					entityId: de.variants[0]!.id,
+					newData: { ...de.variants[0]!, pattern: [{ type: "text", value: "Streifen" }] },
+				},
+				// a variant of a message that doesn't exist
+				{
+					entity: "variant",
+					entityId: "01890000-0000-7000-8000-00000000dead",
+					newData: {
+						id: "01890000-0000-7000-8000-00000000dead",
+						message_id: "missing",
+						matches: [],
+						pattern: [],
+					},
+				},
+			])
+		).rejects.toThrow()
+		const after = (await selectBundleById(project, "zebra"))!
+		expect(after.messages.find((message) => message.locale === "de")!.variants[0]!.pattern).toEqual(
+			[{ type: "text", value: "Zebra" }]
+		)
 	})
 })
