@@ -5,6 +5,7 @@ import { CONFIGURATION } from "../configuration.js"
 import { type Bundle, type InlangProject } from "@inlang/sdk"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
+import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 
 export const editMessageCommand = {
 	command: "sherlock.editMessage",
@@ -55,22 +56,24 @@ export const editMessageCommand = {
 			const updated = await lease.runTask(async () => {
 				await lease.project.db.transaction().execute(async (trx) => {
 					await trx
-						.updateTable("message")
+						.updateTable("inlang_message")
 						.set({
 							selectors: message.selectors,
 						})
-						.where("message.id", "=", message.id)
+						.where("inlang_message.id", "=", message.id)
 						.execute()
 
 					return await trx
-						.updateTable("variant")
+						.updateTable("inlang_variant")
 						.set({
 							pattern: variant.pattern,
 						})
-						.where("variant.id", "=", variant.id)
+						.where("inlang_variant.id", "=", variant.id)
 						.returningAll()
 						.execute()
 				})
+				// write the edit to the translation files, like creating a message does
+				await saveProjectResources(lease.project, lease.path)
 				return true
 			})
 			if (updated.status !== "completed") {

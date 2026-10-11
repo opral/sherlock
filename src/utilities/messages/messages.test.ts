@@ -116,14 +116,14 @@ describe("Message Webview Provider Tests", () => {
 				messages: [
 					{
 						id: "message-id",
-						bundleId: "bundle-id",
+						bundle_id: "bundle-id",
 						locale: "en",
 						selectors: [],
 						variants: [
 							{
 								id: "variant-id",
 								matches: [],
-								messageId: "message-id",
+								message_id: "message-id",
 								pattern: [{ type: "text", value: "Hello" }],
 							},
 						],
@@ -196,14 +196,14 @@ describe("Message Webview Provider Tests", () => {
 				messages: [
 					{
 						id: "message-id",
-						bundleId: "bundle-id",
+						bundle_id: "bundle-id",
 						locale: "en",
 						selectors: [],
 						variants: [
 							{
 								id: "variant-id",
 								matches: [],
-								messageId: "message-id",
+								message_id: "message-id",
 								pattern: [{ type: "text", value: "Hello" }],
 							},
 						],

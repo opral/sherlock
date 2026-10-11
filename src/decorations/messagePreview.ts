@@ -113,7 +113,7 @@ export function messagePreview(args: {
 											},
 										],
 										locale: translationLocale,
-										messageId: variant.messageId,
+										messageId: variant.message_id,
 									})
 								: ""
 

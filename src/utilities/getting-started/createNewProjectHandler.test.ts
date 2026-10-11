@@ -29,8 +29,16 @@ describe("createNewProjectHandler", () => {
 			workspaceFolderPath: "/path/to/workspace",
 		})
 
-		// Check if newProject was called
-		expect(newProject).toHaveBeenCalled()
+		// Check if newProject was called with plugins that read messages and Paraglide's m-functions
+		expect(newProject).toHaveBeenCalledWith({
+			settings: expect.objectContaining({
+				modules: [
+					"https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4/dist/index.js",
+					"https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2/dist/index.js",
+				],
+				"plugin.inlang.messageFormat": { pathPattern: "./messages/{locale}.json" },
+			}),
+		})
 
 		// Check if loadProjectInMemory was called with the blob from newProject
 		expect(loadProjectInMemory).toHaveBeenCalledWith({
