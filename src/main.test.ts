@@ -141,6 +141,7 @@ vi.mock("./utilities/recommendation/recommendation.js", () => ({
 
 vi.mock("./services/telemetry/index.js", () => ({
 	capture: vi.fn(),
+	initTelemetry: vi.fn(),
 	telemetry: {
 		capture: vi.fn(),
 	},

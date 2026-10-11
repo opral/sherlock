@@ -34,7 +34,7 @@ export const jumpToPositionCommand = {
 		editor.revealRange(range, TextEditorRevealType.InCenterIfOutsideViewport)
 
 		capture({
-			event: "IDE-EXTENSION jumped to position in editor",
+			event: "message:position_jump",
 		})
 	},
 }

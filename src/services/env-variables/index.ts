@@ -1,6 +1,5 @@
 type EnvVariables = {
-	IS_PRODUCTION?: string
-	PUBLIC_POSTHOG_TOKEN?: string
+	IS_PRODUCTION?: boolean
 }
 
 export const ENV_VARIABLES: EnvVariables =

@@ -163,10 +163,6 @@
 		},
 		"configuration": {
 			"properties": {
-				"sherlock.userId": {
-					"type": "string",
-					"default": ""
-				},
 				"sherlock.disableRecommendation": {
 					"type": "array",
 					"default": []
@@ -316,7 +312,6 @@
 		"@inlang/plugin-m-function-matcher": "2.3.0",
 		"@inlang/plugin-message-format": "4.5.0",
 		"@inlang/plugin-t-function-matcher": "2.0.27",
-		"@sentry/node": "^7.99.0",
 		"@types/fs-extra": "^11.0.2",
 		"@types/glob": "^8.1.0",
 		"@types/lodash-es": "^4.17.12",
@@ -341,7 +336,6 @@
 		"mocha": "^10.2.0",
 		"node-fetch": "^3.3.2",
 		"ovsx": "^0.8.4",
-		"posthog-node": "^4.0.1",
 		"ts-node": "^10.9.1",
 		"typescript": "5.3.2",
 		"wdio-vscode-service": "^6.0.0"

@@ -1,0 +1,97 @@
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+const mocks = vi.hoisted(() => ({
+	sender: undefined as
+		| undefined
+		| { sendEventData(name: string, data?: Record<string, unknown>): void },
+	logUsage: vi.fn(),
+	createTelemetryLogger: vi.fn(),
+	isProduction: true,
+}))
+
+vi.mock("vscode", () => ({
+	version: "1.141.0",
+	ExtensionMode: { Production: 1, Development: 2, Test: 3 },
+	env: {
+		machineId: "machine-id-raw",
+		createTelemetryLogger: mocks.createTelemetryLogger,
+	},
+}))
+vi.mock("../env-variables/index.js", () => ({
+	ENV_VARIABLES: {
+		get IS_PRODUCTION() {
+			return mocks.isProduction
+		},
+	},
+}))
+vi.mock("../../utilities/state.js", () => ({
+	state: () => ({ project: { id: { get: async () => "project-id-raw" } } }),
+}))
+
+const fetchMock = vi.fn(async () => new Response("{}"))
+vi.stubGlobal("fetch", fetchMock)
+
+beforeEach(() => {
+	vi.resetModules()
+	vi.clearAllMocks()
+	mocks.isProduction = true
+	mocks.createTelemetryLogger.mockImplementation((sender) => {
+		mocks.sender = sender
+		return { logUsage: mocks.logUsage, dispose: vi.fn() }
+	})
+})
+
+describe("telemetry", () => {
+	it("sends nothing from a development run", async () => {
+		const telemetry = await import("./index.js")
+		expect(telemetry.initTelemetry({ extensionMode: 2, version: "2.5.0" })).toBeUndefined()
+		await telemetry.capture({ event: "app:session_start" })
+		expect(mocks.createTelemetryLogger).not.toHaveBeenCalled()
+		expect(fetchMock).not.toHaveBeenCalled()
+	})
+
+	it("sends nothing from a development build", async () => {
+		mocks.isProduction = false
+		const telemetry = await import("./index.js")
+		expect(telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })).toBeUndefined()
+	})
+
+	it("logs usage through VS Code's telemetry logger, which applies telemetry.telemetryLevel", async () => {
+		const telemetry = await import("./index.js")
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		expect(mocks.createTelemetryLogger).toHaveBeenCalledWith(expect.anything(), {
+			ignoreBuiltInCommonProperties: true,
+			ignoreUnhandledErrors: true,
+		})
+		await telemetry.capture({
+			event: "cloud:interest_button_click",
+			properties: { source: "editor" },
+		})
+		expect(mocks.logUsage).toHaveBeenCalledWith("cloud:interest_button_click", {
+			source: "editor",
+			project_id: telemetry.hashId("project-id-raw"),
+		})
+	})
+
+	it("posts to PostHog US through the inlang.com relay with hashed ids and the app property", async () => {
+		const telemetry = await import("./index.js")
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		mocks.sender!.sendEventData("app:session_start", { project_id: "abc" })
+		expect(fetchMock).toHaveBeenCalledOnce()
+		const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+		expect(url).toBe("https://inlang.com/relay/i/v0/e/")
+		const body = JSON.parse(String(init.body))
+		expect(body).toMatchObject({
+			event: "app:session_start",
+			distinct_id: telemetry.hashId("machine-id-raw"),
+			properties: {
+				app: "sherlock",
+				app_version: "2.5.0",
+				vscode_version: "1.141.0",
+				project_id: "abc",
+			},
+		})
+		expect(JSON.stringify(body)).not.toContain("machine-id-raw")
+		expect(body.api_key).toMatch(/^phc_/)
+	})
+})

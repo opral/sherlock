@@ -118,10 +118,11 @@ export async function handleTreeSelection(args: {
 			? await activeProject.runTask(() => activeProject.project.errors.get())
 			: undefined
 		capture({
-			event: "IDE-EXTENSION loaded project",
+			event: "project:project_load",
 			properties: {
-				errors: projectErrors?.status === "completed" ? projectErrors.value : [],
-				isInWorkspaceRecommendation,
+				// a count only: errors can contain paths
+				error_count: projectErrors?.status === "completed" ? projectErrors.value.length : 0,
+				in_workspace_recommendation: isInWorkspaceRecommendation,
 			},
 		})
 	} catch (error) {
