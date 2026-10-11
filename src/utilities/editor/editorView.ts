@@ -8,7 +8,8 @@ import { msg } from "../messages/msg.js"
 import type { ChangeEventDetail } from "@inlang/editor-component"
 import { deleteVariant } from "./helper/deleteVariant.js"
 import { deleteBundleNested } from "./helper/deleteBundleNested.js"
-import { handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { applyChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { showCloudPanel } from "../cloud/cloudView.js"
 import { createMessage } from "./helper/createMessage.js"
 import { saveProject } from "../../main.js"
 import { saveProjectResources } from "../project/projectResourceSynchronization.js"
@@ -145,12 +146,40 @@ export function editorView(args: {
 
 					await updateView()
 					return
-				case "delete-bundle":
+				case "delete-bundle": {
+					const choice = await vscode.window.showWarningMessage(
+						`Delete the message "${bundleId}" in every language?`,
+						{
+							modal: true,
+							detail: "Its translations and forms are removed from the translation files.",
+						},
+						"Delete"
+					)
+					if (choice !== "Delete") return
 					await queueMutation(() =>
 						deleteBundleNested({ db: lease.project.db, bundleId: message.id })
 					)
 
 					await updateView()
+					return
+				}
+				case "apply-changes":
+					await queueMutation(async () => {
+						try {
+							await applyChanges(lease.project.db, message.changes)
+						} catch (error) {
+							console.error("Failed to apply the editor's changes", error)
+							msg(`Couldn't save the edit. ${String(error)}`, "error")
+							// show what is stored again
+							message.persist = true
+						}
+					})
+					if (message.persist === true) {
+						await updateView()
+					}
+					return
+				case "open-cloud":
+					showCloudPanel({ source: "editor" })
 					return
 				case "change":
 					await queueUpdate(message)
@@ -223,6 +252,7 @@ export function editorView(args: {
 			command: "change",
 			data: data.value,
 		})
+		const deleted = data.value.bundle === undefined
 
 		const workspaceFolder = vscode.workspace.workspaceFolders![0]
 		if (workspaceFolder) {
@@ -233,6 +263,8 @@ export function editorView(args: {
 				msg(`Failed to save project. ${String(error)}`, "error")
 			}
 		}
+		// the message was deleted: nothing left to edit
+		if (deleted) panel?.dispose()
 	}
 
 	async function persistEdit() {

@@ -1,5 +1,6 @@
 import { Kysely } from "kysely"
 import { type InlangDatabaseSchema } from "@inlang/sdk"
+import { inTransaction } from "./inTransaction.js"
 
 /**
  * Delete a bundle along with its nested messages and variants.
@@ -18,7 +19,7 @@ export const deleteBundleNested = async ({
 	bundleId: string
 }) => {
 	try {
-		await db.transaction().execute(async (trx) => {
+		await inTransaction(db, async (trx) => {
 			const messageIds = (
 				await trx
 					.selectFrom("inlang_message")

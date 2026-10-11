@@ -14,6 +14,7 @@ import { openSettingsViewCommand } from "./commands/openSettingsView.js"
 import { toggleInlineAnnotationsCommand } from "./commands/toggleInlineAnnotation.js"
 import { openEditorViewCommand } from "./commands/openEditorView.js"
 import { reloadProjectCommand } from "./commands/reloadProject.js"
+import { machineTranslateCommand, openCloudCommand } from "./commands/cloud.js"
 
 export const CONFIGURATION = {
 	EVENTS: {
@@ -42,6 +43,8 @@ export const CONFIGURATION = {
 		COPY_ERROR: copyErrorCommand,
 		TOGGLE_INLINE_ANNOTATIONS: toggleInlineAnnotationsCommand,
 		RELOAD_PROJECT: reloadProjectCommand,
+		MACHINE_TRANSLATE: machineTranslateCommand,
+		OPEN_CLOUD: openCloudCommand,
 	},
 	FILES: {
 		// TODO: remove this hardcoded assumption for multi project support

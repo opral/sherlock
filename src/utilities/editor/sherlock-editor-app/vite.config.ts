@@ -1,18 +1,18 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
-import tailwindcss from "@tailwindcss/vite"
+import { fileURLToPath } from "node:url"
 
 // https://vite.dev/config/
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
-	worker: {
-		format: "es",
-		rollupOptions: {
-			output: {
-				// Share assets emitted by both the editor and its worker builds.
-				assetFileNames: `assets/[name].[ext]`,
+	plugins: [react()],
+	resolve: {
+		// the webview never opens a project: keep the Lix engine out of the bundle
+		alias: [
+			{
+				find: /^@lix-js\/sdk$/,
+				replacement: fileURLToPath(new URL("./src/lib/lixStub.ts", import.meta.url)),
 			},
-		},
+		],
 	},
 	build: {
 		target: "es2022",

@@ -9,28 +9,21 @@ it("should have matching engine and dependency versions", () => {
 })
 
 describe("production build", () => {
-	it("ships Lix workers and their engine, migration, and component WASM assets", () => {
+	it("ships the Lix worker and engine for the extension, and none in the editor webview", () => {
+		// the extension host opens projects with the Lix engine
+		expect(existsSync(new URL("../dist/wasm/lix_js_sdk_bg.wasm", import.meta.url))).toBe(true)
+		expect(existsSync(new URL("../dist/entry.node.js", import.meta.url))).toBe(true)
+		// the editor webview only uses the SDK's pure helpers: no engine, no workers
 		const assets = new URL("../assets/sherlock-editor-app/assets/", import.meta.url)
 		const files = readdirSync(assets)
-		const wasmFiles = files.filter((file) => file.endsWith(".wasm"))
-		const engine = readFileSync(new URL("../dist/wasm/lix_js_sdk_bg.wasm", import.meta.url))
-		// Dedicated and repository workers must reuse one copy of the engine.
-		expect(
-			wasmFiles.filter((file) => readFileSync(new URL(file, assets)).equals(engine))
-		).toHaveLength(1)
-		expect(files.filter((file) => /^entry\.browser.*\.js$/.test(file))).toHaveLength(1)
-		expect(files.filter((file) => /^entry\.repository\.browser.*\.js$/.test(file))).toHaveLength(1)
+		expect(files.filter((file) => file.endsWith(".wasm"))).toEqual([])
+		expect(files.filter((file) => /^entry\./.test(file))).toEqual([])
 		const scripts = files
 			.filter((file) => file.endsWith(".js"))
 			.map((file) => readFileSync(new URL(file, assets), "utf8"))
 			.join("\n")
-		const referencedWasm = [...scripts.matchAll(/\/assets\/([^"'\s/]+\.wasm)/g)].map(
-			(match) => match[1]
-		)
-		expect(referencedWasm.length).toBeGreaterThan(0)
-		for (const file of referencedWasm) {
-			expect(wasmFiles).toContain(file)
-		}
+		expect(scripts).toContain("inlang-pattern-editor")
+		expect(scripts).toContain("inlang-message-forms")
 	})
 
 	it.each(["lit-html.js", "settings-component.js"])(

@@ -1,275 +1,322 @@
-import type { BundleNested, MessageRow, ProjectSettings } from "@inlang/sdk"
-import { vscode } from "../utils/vscode.js"
-import React from "react"
-import {
-	InlangMessage,
-	InlangPatternEditor,
-	InlangVariant,
-	InlangBundle,
-	ChangeEventDetail,
-	InlangBundleAction,
-	InlangAddSelector,
-} from "@inlang/editor-component"
-import { createComponent } from "@lit/react"
-import { SlDialog, SlDropdown, SlMenu, SlMenuItem } from "@shoelace-style/shoelace/dist/react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { flushSync } from "react-dom"
+import type { InlangPatternEditor } from "@inlang/editor-component"
+import { checkBundle } from "@inlang/sdk/browser"
+import type { BundleNested, Pattern, ProjectSettings } from "@inlang/sdk"
 import { v7 as uuidv7 } from "uuid"
+import { vscode } from "../utils/vscode.js"
+import { diffBundles } from "../lib/diffBundles.js"
+import { MessageForms, PatternField, type EditorMessage, type EditorVariant } from "./fields.js"
+import { TranslationProblems } from "./TranslationProblems.js"
+import { SelectorPanel } from "./SelectorPanel.js"
+import { Icon } from "./icons.js"
+import {
+	PROBLEM_CHECKS,
+	isTranslationProblem,
+	type TranslationProblem,
+} from "../problems/translationProblems.js"
 
-const ReactInlangBundle = createComponent({
-	tagName: "inlang-bundle",
-	elementClass: InlangBundle,
-	react: React,
-	events: {
-		change: "change",
-	},
-})
-
-const ReactInlangBundleAction = createComponent({
-	tagName: "inlang-bundle-action",
-	elementClass: InlangBundleAction,
-	react: React,
-})
-
-const ReactInlangMessage = createComponent({
-	tagName: "inlang-message",
-	elementClass: InlangMessage,
-	react: React,
-})
-
-const ReactInlangVariant = createComponent({
-	tagName: "inlang-variant",
-	elementClass: InlangVariant,
-	react: React,
-})
-
-const ReactInlangPatternEditor = createComponent({
-	tagName: "inlang-pattern-editor",
-	elementClass: InlangPatternEditor,
-	react: React,
-	events: {
-		onPatternEditorFocus: "pattern-editor-focus",
-		onPatternEditorBlur: "pattern-editor-blur",
-	},
-})
-
-const ReactInlangAddSelector = createComponent({
-	tagName: "inlang-add-selector",
-	elementClass: InlangAddSelector,
-	react: React,
-	events: {
-		change: "change",
-		onSubmit: "submit",
-	},
-})
-
-const Editor: React.FC<{
-	bundle: BundleNested
-	settings: ProjectSettings
-}> = ({ bundle, settings }) => {
-	const handleChangeEvent = (e: Event, persist = false) => {
-		const change = (e as CustomEvent).detail as ChangeEventDetail
-		vscode.postMessage({ command: "change", change, persist })
-	}
-
-	const handleStructuralChangeEvent = (e: Event) => {
-		handleChangeEvent(e, true)
-	}
-
-	const handlePersistEdit = () => {
-		vscode.postMessage({ command: "persist-edit" })
-	}
-
-	const handleDelete = ({
-		command,
-		message,
-	}: {
-		command: "delete-bundle" | "delete-variant"
-		message: {
-			id: string
-		}
-	}) => {
-		vscode.postMessage({ command, id: message.id })
-	}
-
-	const createMessage = async (message: MessageRow) => {
-		if (message) {
-			vscode.postMessage({
-				command: "create-message",
-				message,
-			})
-		}
-	}
-
-	return (
-		<div className="relative">
-			<ReactInlangBundle bundle={bundle} change={handleChangeEvent}>
-				<ReactInlangBundleAction
-					slot="bundle-action"
-					actionTitle="Delete"
-					onClick={() => handleDelete({ command: "delete-bundle", message: { id: bundle.id } })}
-				/>
-				{settings.locales.map((locale) => {
-					const message = bundle.messages.find((message) => message.locale === locale)
-					if (message) {
-						return (
-							<ReactInlangMessage
-								key={message.id}
-								slot="message"
-								message={message}
-								variants={message.variants}
-								settings={settings}
-							>
-								{message.variants.map((variant) => (
-									<ReactInlangVariant key={variant.id} slot="variant" variant={variant}>
-										<ReactInlangPatternEditor
-											slot="pattern-editor"
-											variant={variant}
-											onPatternEditorBlur={handlePersistEdit}
-										/>
-										<SlDropdown
-											slot="variant-action"
-											className="animate-blendIn"
-											distance={4}
-											hoist
-											onSlShow={(e) => {
-												setTimeout(() => {
-													;(e.target as HTMLElement)?.querySelector("sl-menu-item")?.focus()
-												})
-											}}
-										>
-											<div slot="trigger" className="px-2 cursor-pointer">
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													width="20"
-													height="20"
-													viewBox="0 0 24 24"
-													className="-mx-[2px]"
-												>
-													<path
-														fill="currentColor"
-														d="M7 12a2 2 0 1 1-4 0a2 2 0 0 1 4 0m7 0a2 2 0 1 1-4 0a2 2 0 0 1 4 0m7 0a2 2 0 1 1-4 0a2 2 0 0 1 4 0"
-													/>
-												</svg>
-											</div>
-											<SlMenu>
-												<SlMenuItem
-													onClick={() => {
-														const dialog = document.getElementById(
-															`selector-button-dialog-${bundle.id}`
-															// @ts-expect-error - TS doesn't know about the dialog component
-														) as SlDialog
-														if (dialog) {
-															const child = dialog.children[0] as InlangAddSelector
-															if (child) {
-																child.message = message
-																child.variants = message.variants
-															}
-															setTimeout(() => {
-																dialog.show()
-															})
-														}
-													}}
-												>
-													Add Selector
-												</SlMenuItem>
-												{message.variants.length > 1 && (
-													<SlMenuItem
-														onClick={() =>
-															handleDelete({
-																command: "delete-variant",
-																message: { id: variant.id },
-															})
-														}
-													>
-														Delete
-													</SlMenuItem>
-												)}
-											</SlMenu>
-										</SlDropdown>
-									</ReactInlangVariant>
-								))}
-								<div
-									slot="selector-button"
-									title="Add selector"
-									className="px-2 h-8 mt-[6px] ml-[1px] bg-white rounded text-zinc-600 flex items-center justify-center hover:bg-zinc-100 hover:border-zinc-400 cursor-pointer"
-									onClick={() => {
-										const dialog = document.getElementById(
-											`selector-button-dialog-${bundle.id}`
-											// @ts-expect-error - TS doesn't know about the dialog component
-										) as SlDialog
-										if (dialog) {
-											const child = dialog.children[0] as InlangAddSelector
-											if (child) {
-												child.message = message
-												child.variants = message.variants
-											}
-											setTimeout(() => {
-												dialog.show()
-											})
-										}
-									}}
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										className="-mx-[3px]"
-									>
-										<path fill="currentColor" d="M19 12.998h-6v6h-2v-6H5v-2h6v-6h2v6h6z" />
-									</svg>
-								</div>
-							</ReactInlangMessage>
-						)
-					} else {
-						const message: MessageRow = {
-							id: uuidv7(),
-							selectors: [],
-							locale,
-							bundle_id: bundle.id,
-						}
-						return (
-							<ReactInlangMessage
-								slot="message"
-								message={message}
-								settings={settings}
-								key={`${bundle.id}-${locale}-empty`}
-							>
-								<p
-									className="min-h-[44px] bg-white hover:bg-zinc-50 flex items-center px-2 text-[14px] text-zinc-500 hover:text-zinc-950 gap-[4px] cursor-pointer w-full"
-									slot="variant"
-									onClick={() => createMessage(message)}
-								>
-									<svg viewBox="0 0 24 24" width="18" height="18" className="w-5 h-5">
-										<path fill="currentColor" d="M11 13H5v-2h6V5h2v6h6v2h-6v6h-2z"></path>
-									</svg>
-									{`Add ${locale}`}
-								</p>
-							</ReactInlangMessage>
-						)
-					}
-				})}
-			</ReactInlangBundle>
-			<SlDialog
-				id={`selector-button-dialog-${bundle.id}`}
-				className="add-selector-dialog"
-				label="Add selector"
-			>
-				<ReactInlangAddSelector
-					change={handleStructuralChangeEvent}
-					onSubmit={() => {
-						const dialog = document.getElementById(
-							`selector-button-dialog-${bundle.id}`
-							// @ts-expect-error - TS doesn't know about the dialog component
-						) as SlDialog
-						dialog.hide()
-					}}
-					bundle={bundle}
-					// message={message}
-					// variants={message?.variants}
-				/>
-			</SlDialog>
-		</div>
-	)
+function isEmptyPattern(pattern: Pattern) {
+	return pattern.every((element) => element.type === "text" && element.value.trim() === "")
 }
 
-export default Editor
+function languageName(locale: string) {
+	try {
+		return new Intl.DisplayNames([navigator.language || "en"], { type: "language" }).of(locale)
+	} catch {
+		return undefined
+	}
+}
+
+/** Declares the variables a pattern uses that the bundle doesn't know yet, e.g. a typed `{count}`. */
+function declareVariables(bundle: BundleNested, pattern: Pattern): BundleNested["declarations"] {
+	const declarations = [...bundle.declarations]
+	for (const element of pattern) {
+		if (element.type !== "expression" || element.arg.type !== "variable-reference") continue
+		const name = element.arg.name
+		if (!declarations.some((declaration) => declaration.name === name)) {
+			declarations.push({ type: "input-variable", name })
+		}
+	}
+	return declarations
+}
+
+/**
+ * The editor of one bundle: a row per language with the translation, its forms (plural, select)
+ * and the problems the SDK's checks find, plus "Plural & select" for the whole bundle.
+ *
+ * The extension owns the data. The editor keeps its own copy to stay responsive while typing,
+ * sends the rows it changed and replaces its copy when the extension sends a new bundle.
+ */
+export default function Editor({
+	bundle: stored,
+	settings,
+}: {
+	bundle: BundleNested
+	settings: ProjectSettings
+}) {
+	const [bundle, setBundle] = useState(stored)
+	const current = useRef(stored)
+	// a new bundle from the extension replaces the editor's copy
+	useEffect(() => {
+		current.current = stored
+		setBundle(stored)
+	}, [stored])
+
+	const { locales, baseLocale } = settings
+	const [selected, setSelected] = useState<Record<string, string>>({})
+	const [showSelectors, setShowSelectors] = useState(false)
+	const [error, setError] = useState<string>()
+	const fields = useRef(new Map<string, InlangPatternEditor>())
+	const focusVariant = useRef<string>(undefined)
+	useLayoutEffect(() => {
+		const field = focusVariant.current && fields.current.get(focusVariant.current)
+		if (!field) return
+		focusVariant.current = undefined
+		field.focus()
+	})
+
+	// Messages of languages without a translation yet. The ids stay the same while the editor is
+	// open, so that typing into a draft creates the message once.
+	const draftIds = useRef(new Map<string, { message: string; variant: string }>())
+	const reference = bundle.messages.find((message) => message.locale === baseLocale)
+	const drafts = useMemo(() => {
+		const selectors = reference?.selectors ?? []
+		return locales
+			.filter((locale) => !bundle.messages.some((message) => message.locale === locale))
+			.map((locale): EditorMessage => {
+				const key = `${bundle.id}\u0000${locale}`
+				let ids = draftIds.current.get(key)
+				if (!ids) {
+					ids = { message: uuidv7(), variant: uuidv7() }
+					draftIds.current.set(key, ids)
+				}
+				return {
+					id: ids.message,
+					bundle_id: bundle.id,
+					locale,
+					selectors: structuredClone(selectors),
+					// a plural or select starts without forms: "+ Add form" adds them one by one
+					variants:
+						selectors.length > 0
+							? []
+							: [{ id: ids.variant, message_id: ids.message, matches: [], pattern: [] }],
+				}
+			})
+	}, [bundle, locales, reference?.selectors])
+
+	const problems = useMemo(() => {
+		const byLocale = new Map<string, TranslationProblem[]>()
+		try {
+			for (const diagnostic of checkBundle({
+				bundle,
+				locales,
+				referenceLocale: baseLocale,
+				checks: [...PROBLEM_CHECKS],
+			})) {
+				if (!isTranslationProblem(diagnostic) || !diagnostic.locale) continue
+				byLocale.set(diagnostic.locale, [...(byLocale.get(diagnostic.locale) ?? []), diagnostic])
+			}
+		} catch (e) {
+			console.error("Checking the bundle failed", e)
+		}
+		return byLocale
+	}, [bundle, locales, baseLocale])
+
+	/** Shows `next`, and sends the rows that differ from the editor's copy to the extension. */
+	const commit = (next: BundleNested, options: { persist: boolean }) => {
+		const changes = diffBundles(current.current, next)
+		if (changes.length === 0) return
+		current.current = next
+		setBundle(next)
+		setError(undefined)
+		vscode.postMessage({ command: "apply-changes", changes, persist: options.persist })
+	}
+
+	/** The bundle with `message` (a draft or a stored message) replaced by `update(message)`. */
+	const withMessage = (
+		message: EditorMessage,
+		update: (message: EditorMessage) => EditorMessage
+	): BundleNested => {
+		const base = current.current
+		const exists = base.messages.some((m) => m.id === message.id)
+		return {
+			...base,
+			messages: exists
+				? base.messages.map((m) => (m.id === message.id ? update(m) : m))
+				: [...base.messages, update(structuredClone(message))],
+		}
+	}
+
+	const editPattern = (message: EditorMessage, variantId: string, pattern: Pattern) => {
+		const next = withMessage(message, (m) => ({
+			...m,
+			variants: m.variants.map((v) => (v.id === variantId ? { ...v, pattern } : v)),
+		}))
+		commit({ ...next, declarations: declareVariables(next, pattern) }, { persist: false })
+	}
+
+	const addForm = (message: EditorMessage, matches: EditorVariant["matches"]) => {
+		const id = uuidv7()
+		focusVariant.current = id
+		// rendered (and focused) before the click's task ends, so that no key typed right after is lost
+		flushSync(() => {
+			commit(
+				withMessage(message, (m) => ({
+					...m,
+					variants: [...m.variants, { id, message_id: m.id, matches, pattern: [] }],
+				})),
+				{ persist: true }
+			)
+			setSelected((s) => ({ ...s, [message.locale]: id }))
+		})
+	}
+
+	const deleteForm = (message: EditorMessage, variantId: string) => {
+		commit(
+			withMessage(message, (m) => ({
+				...m,
+				variants: m.variants.filter((v) => v.id !== variantId),
+			})),
+			{ persist: true }
+		)
+	}
+
+	const persist = () => vscode.postMessage({ command: "persist-edit" })
+
+	return (
+		<main className="editor">
+			<header className="editor-header">
+				<h1 className="bundle-id" title={bundle.id}>
+					{bundle.id}
+				</h1>
+				<div className="header-actions">
+					<button
+						type="button"
+						className={showSelectors ? "button-secondary pressed" : "button-secondary"}
+						aria-expanded={showSelectors}
+						onClick={() => setShowSelectors((open) => !open)}
+						title="Choose the text by a number (plural) or a value (select), in every language"
+					>
+						Plural &amp; select
+					</button>
+					<button
+						type="button"
+						className="icon-button danger"
+						title="Delete this message in every language"
+						aria-label="Delete message"
+						onClick={() => vscode.postMessage({ command: "delete-bundle", id: bundle.id })}
+					>
+						<Icon name="trash" />
+					</button>
+				</div>
+			</header>
+
+			{showSelectors && (
+				<SelectorPanel
+					bundle={bundle}
+					referenceLocale={baseLocale}
+					createId={uuidv7}
+					onChange={(next) => commit(next, { persist: true })}
+					onError={setError}
+				/>
+			)}
+
+			{error && (
+				<p role="alert" className="error">
+					{error}
+				</p>
+			)}
+
+			<div className="rows">
+				{locales.map((locale) => {
+					const message =
+						bundle.messages.find((m) => m.locale === locale) ??
+						drafts.find((m) => m.locale === locale)!
+					const isDraft = !bundle.messages.some((m) => m.id === message.id)
+					const withForms = message.selectors.length > 0 || message.variants.length > 1
+					const variant =
+						message.variants.find((v) => v.id === selected[locale]) ?? message.variants[0]
+					const name = languageName(locale)
+					const isReference = locale === baseLocale
+					const empty = message.variants.every((v) => isEmptyPattern(v.pattern))
+					const referenceHasText =
+						!!reference && reference.variants.some((v) => !isEmptyPattern(v.pattern))
+					const showMachineTranslate = !isReference && empty && referenceHasText && !withForms
+					return (
+						<section className="row" key={locale} data-locale={locale}>
+							<div className="row-locale" title={name}>
+								<span className="locale">{locale}</span>
+								{isReference && <span className="tag">ref</span>}
+							</div>
+							<div className="row-body">
+								{withForms && (
+									<MessageForms
+										message={message}
+										declarations={bundle.declarations}
+										referenceVariants={isReference ? undefined : reference?.variants}
+										selectedVariantId={variant?.id ?? ""}
+										onSelect={(variantId) => setSelected((s) => ({ ...s, [locale]: variantId }))}
+										onAdd={(matches) => addForm(message, matches)}
+									/>
+								)}
+								{variant && (
+									<div className="field-row">
+										<PatternField
+											key={variant.id}
+											variant={variant}
+											declarations={bundle.declarations}
+											label={`${name ?? locale} translation`}
+											placeholder={isReference ? "Enter text…" : `Translate to ${name ?? locale}…`}
+											fields={fields.current}
+											onChange={(variantId, pattern) => editPattern(message, variantId, pattern)}
+											onBlur={persist}
+										/>
+										{showMachineTranslate && (
+											<button
+												type="button"
+												className="machine-translate"
+												title="Machine translate: AI translation that keeps your tone of voice and terminology is coming to inlang Cloud"
+												aria-label="Machine translate"
+												onClick={() =>
+													vscode.postMessage({ command: "open-cloud", source: "editor" })
+												}
+											>
+												<Icon name="sparkle" />
+												<span className="machine-translate-label">Machine translate…</span>
+											</button>
+										)}
+										{withForms && (
+											<span className="row-slot">
+												{message.variants.length > 1 && (
+													<button
+														type="button"
+														className="icon-button"
+														aria-label={`Delete this ${locale} form`}
+														title="Delete this form"
+														onClick={() => deleteForm(message, variant.id)}
+													>
+														<Icon name="trash" />
+													</button>
+												)}
+											</span>
+										)}
+									</div>
+								)}
+								{!isDraft && (
+									<TranslationProblems
+										problems={problems.get(locale)}
+										message={message}
+										declarations={bundle.declarations}
+										selectedVariantId={variant?.id}
+										onSelect={(variantId) => setSelected((s) => ({ ...s, [locale]: variantId }))}
+									/>
+								)}
+							</div>
+						</section>
+					)
+				})}
+			</div>
+		</main>
+	)
+}

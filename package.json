@@ -113,6 +113,16 @@
 				"command": "sherlock.createMessage",
 				"title": "Sherlock: Create Message",
 				"icon": "$(add)"
+			},
+			{
+				"command": "sherlock.machineTranslate",
+				"title": "Sherlock: Machine translate…",
+				"icon": "$(sparkle)"
+			},
+			{
+				"command": "sherlock.openCloud",
+				"title": "Sherlock: inlang Cloud",
+				"icon": "$(cloud)"
 			}
 		],
 		"menus": {
@@ -143,6 +153,11 @@
 					"command": "sherlock.extractMessage",
 					"when": "view == messageView",
 					"group": "navigation"
+				},
+				{
+					"command": "sherlock.machineTranslate",
+					"when": "view == messageView",
+					"group": "navigation@3"
 				}
 			]
 		},

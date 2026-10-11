@@ -4,7 +4,12 @@ import { state } from "../utilities/state.js"
 import { getStringFromPattern } from "../utilities/messages/query.js"
 import { INTERPOLATE } from "../configuration.js"
 import { escapeHtml } from "../utilities/utils.js"
-import { type IdeExtensionConfig } from "@inlang/sdk"
+import { checkBundle, selectorGroups, type IdeExtensionConfig } from "@inlang/sdk"
+import {
+	PROBLEM_CHECKS,
+	isTranslationProblem,
+	problemText,
+} from "../utilities/editor/sherlock-editor-app/src/problems/translationProblems.js"
 import type { InlangProject } from "@inlang/sdk"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
 
@@ -14,6 +19,8 @@ type ContextTableRow = {
 	locale: string
 	message: string
 	bundleId: string
+	/** what the SDK's checks find in the translation: "Missing {name}", "Missing form: few" */
+	problems?: string[]
 	editCommand?: Uri
 	openInFinkCommand?: Uri
 }
@@ -30,8 +37,11 @@ function renderTranslationRow(row: ContextTableRow) {
 	)}</td>`
 	const actionCommandCell = actionCommandLink ? `<td>&nbsp;&nbsp;${actionCommandLink}</td>` : ""
 	const openInFinkCell = openInFinkLink ? `<td>&nbsp;${openInFinkLink}</td>` : ""
+	const problemsRow = row.problems?.length
+		? `<tr><td></td><td>$(warning) ${row.problems.map(escapeHtml).join(" · ")}</td></tr>`
+		: ""
 
-	return `<tr>${messageListing}${actionCommandCell}${openInFinkCell}</tr>`
+	return `<tr>${messageListing}${actionCommandCell}${openInFinkCell}</tr>${problemsRow}`
 }
 
 export async function contextTooltip(
@@ -52,7 +62,13 @@ export async function contextTooltip(
 	}
 
 	// Get the configured language tags
-	const configuredLanguageTags = (await project.settings.get())?.locales || []
+	const settings = await project.settings.get()
+	const configuredLanguageTags = settings?.locales || []
+	const problems = translationProblems({
+		bundle,
+		locales: configuredLanguageTags,
+		referenceLocale: settings.baseLocale,
+	})
 
 	// Generate rows for each configured language tag
 	const contextTableRows: ContextTableRow[] = await Promise.all(
@@ -91,6 +107,7 @@ export async function contextTooltip(
 				locale,
 				message: m,
 				bundleId: referenceMessage.bundleId,
+				problems: message ? problems.get(locale) : undefined,
 				editCommand,
 				// openInFinkCommand,
 			}
@@ -105,4 +122,53 @@ export async function contextTooltip(
 	tooltip.supportThemeIcons = true
 
 	return tooltip
+}
+
+/**
+ * The problems of each translation of a bundle, from the SDK's checks: missing or unknown
+ * variables, missing markup, empty forms, and plural or select forms a language still needs.
+ * A missing translation is the "[missing]" text itself.
+ */
+export function translationProblems(args: {
+	bundle: NonNullable<Awaited<ReturnType<typeof selectBundleById>>>
+	locales: string[]
+	referenceLocale: string
+}): Map<string, string[]> {
+	const byLocale = new Map<string, string[]>()
+	const add = (locale: string, text: string) => {
+		const texts = byLocale.get(locale) ?? []
+		if (!texts.includes(text)) byLocale.set(locale, [...texts, text])
+	}
+	const missingForms = new Map<string, string[]>()
+	try {
+		for (const diagnostic of checkBundle({
+			bundle: args.bundle,
+			locales: args.locales,
+			referenceLocale: args.referenceLocale,
+			checks: [...PROBLEM_CHECKS, "missing-variant"],
+		})) {
+			if (!diagnostic.locale) continue
+			if (isTranslationProblem(diagnostic)) {
+				add(diagnostic.locale, problemText(diagnostic))
+			} else if (diagnostic.checkId === "missing-variant") {
+				const message = args.bundle.messages.find((m) => m.id === diagnostic.messageId)
+				if (!message) continue
+				const label = selectorGroups(message, args.bundle.declarations, {
+					variants: [{ matches: diagnostic.matches }],
+				})
+					.map((group) => {
+						const key = group.keyOf({ matches: diagnostic.matches })
+						return key !== "*" ? key : group.isPlural ? "other" : "any other"
+					})
+					.join(", ")
+				missingForms.set(diagnostic.locale, [...(missingForms.get(diagnostic.locale) ?? []), label])
+			}
+		}
+		for (const [locale, labels] of missingForms) {
+			add(locale, `${labels.length === 1 ? "Missing form" : "Missing forms"}: ${labels.join("; ")}`)
+		}
+	} catch (error) {
+		console.error("Checking the translations failed", error)
+	}
+	return byLocale
 }

@@ -193,6 +193,13 @@ You can have multiple projects in your repository. By using the Sherlock tab, it
 
 <br>
 
+## Machine translation
+
+Run **Sherlock: Machine translate…** from the command palette, or click **Machine translate…** next to an empty translation in the editor.
+
+- **On your machine, today:** the [inlang CLI](https://inlang.com/m/2qj2w8pu/app-inlang-cli) translates the missing messages of your project with `npx @inlang/cli machine translate --project ./project.inlang`. By default it uses a free, third-party service that inlang doesn't operate; you can bring your own DeepL or Google Translate API key.
+- **inlang Cloud (coming soon):** AI translation that keeps your tone of voice and terminology, translations that fit the design, smart message keys, and automatic handoff between design, translation and code. [Tell us what your team needs](https://docs.google.com/forms/d/e/1FAIpQLSdwui1r1rFu1AXMPKa-g2ggDHOTvNFrmrxWDubaaYLHv8_4Mg/viewform?usp=pp_url&entry.14901479=Sherlock).
+
 ## Customization
 
 ### Custom preview language

@@ -1,5 +1,5 @@
 import "./App.css"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { vscode } from "./utils/vscode.js"
 import Editor from "./components/Editor.js"
 import type { BundleNested, ProjectSettings } from "@inlang/sdk"
@@ -7,31 +7,27 @@ import type { BundleNested, ProjectSettings } from "@inlang/sdk"
 type VscodeMessage = {
 	command: "change"
 	data: {
-		bundle: BundleNested
+		bundle: BundleNested | undefined
 		settings: ProjectSettings
 	}
 }
 
 function App() {
-	const [bundle, setBundle] = useState<BundleNested | undefined>(undefined)
-	const [settings, setSettings] = useState<ProjectSettings | undefined>(undefined)
+	const [data, setData] = useState<VscodeMessage["data"]>()
 
-	vscode.onMessage((message: unknown) => {
-		const typedMessage = message as VscodeMessage
-
-		setBundle(typedMessage.data.bundle)
-		setSettings(typedMessage.data.settings)
-	})
-
-	return (
-		<>
-			{bundle && settings ? (
-				<Editor bundle={bundle} settings={settings} />
-			) : (
-				<p className="flex justify-center items-center h-screen text-gray-500">Loading...</p>
-			)}
-		</>
+	useEffect(
+		() =>
+			vscode.onMessage((message: unknown) => {
+				const typedMessage = message as VscodeMessage
+				if (typedMessage?.command !== "change") return
+				setData(typedMessage.data)
+			}),
+		[]
 	)
+
+	if (!data) return <p className="status">Loading…</p>
+	if (!data.bundle) return <p className="status">This message no longer exists.</p>
+	return <Editor bundle={data.bundle} settings={data.settings} />
 }
 
 export default App
