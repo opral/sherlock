@@ -15,15 +15,16 @@ type VscodeMessage = {
 function App() {
 	const [data, setData] = useState<VscodeMessage["data"]>()
 
-	useEffect(
-		() =>
-			vscode.onMessage((message: unknown) => {
-				const typedMessage = message as VscodeMessage
-				if (typedMessage?.command !== "change") return
-				setData(typedMessage.data)
-			}),
-		[]
-	)
+	useEffect(() => {
+		const unsubscribe = vscode.onMessage((message: unknown) => {
+			const typedMessage = message as VscodeMessage
+			if (typedMessage?.command !== "change") return
+			setData(typedMessage.data)
+		})
+		// ask for the data: what the extension posted before this listener existed is lost
+		vscode.postMessage({ command: "ready" })
+		return unsubscribe
+	}, [])
 
 	if (!data) return <p className="status">Loading…</p>
 	if (!data.bundle) return <p className="status">This message no longer exists.</p>

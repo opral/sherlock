@@ -6,6 +6,7 @@ import { resolveEscapedCharacters } from "../utilities/messages/resolveEscapedCh
 import { getPreviewLocale } from "../utilities/locale/getPreviewLocale.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { getExtensionApi } from "../utilities/helper.js"
+import { previewVariant } from "../utilities/messages/previewVariant.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
 import type { InlangProject } from "@inlang/sdk"
 import {
@@ -100,9 +101,7 @@ export function messagePreview(args: {
 							// Get the message from the bundle
 							const message = _bundle?.messages.find((m) => m.locale === translationLocale)
 
-							const variant =
-								message?.variants.find((v) => v.matches.some((m) => m.type === "catchall-match")) ||
-								message?.variants[0]
+							const variant = previewVariant(message?.variants)
 
 							const translationString = variant
 								? getStringFromPattern({

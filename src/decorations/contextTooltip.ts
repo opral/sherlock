@@ -11,6 +11,7 @@ import {
 	problemText,
 } from "../utilities/editor/sherlock-editor-app/src/problems/translationProblems.js"
 import type { InlangProject } from "@inlang/sdk"
+import { previewVariant } from "../utilities/messages/previewVariant.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
 
 const MISSING_TRANSLATION_MESSAGE = "[missing]"
@@ -76,9 +77,7 @@ export async function contextTooltip(
 			const message = bundle.messages.find((m) => m.locale === locale)
 
 			// Get the catchall variant or first variant as fallback
-			const variant =
-				message?.variants.find((v) => v.matches.some((m) => m.type === "catchall-match")) ||
-				message?.variants[0]
+			const variant = previewVariant(message?.variants)
 
 			let m = MISSING_TRANSLATION_MESSAGE
 

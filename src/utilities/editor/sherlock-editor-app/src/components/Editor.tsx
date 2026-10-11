@@ -217,7 +217,20 @@ export default function Editor({
 					bundle={bundle}
 					referenceLocale={baseLocale}
 					createId={uuidv7}
-					onChange={(next) => commit(next, { persist: true })}
+					onChange={(next) => {
+						// select (and focus) the form a new exact number or select value added
+						const before = new Set(
+							current.current.messages.flatMap((m) => m.variants.map((v) => v.id))
+						)
+						const added = next.messages
+							.find((m) => m.locale === baseLocale)
+							?.variants.find((v) => !before.has(v.id))
+						if (added) {
+							focusVariant.current = added.id
+							setSelected((s) => ({ ...s, [baseLocale]: added.id }))
+						}
+						commit(next, { persist: true })
+					}}
 					onError={setError}
 				/>
 			)}

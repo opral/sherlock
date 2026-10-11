@@ -91,38 +91,28 @@ export function editorView(args: {
 		// Listen to panel and load state when it's visible
 		panel.onDidChangeViewState(
 			async (e) => {
-				if (e.webviewPanel.visible) {
-					const data = await lease.runTask(async () => ({
-						bundle: await selectBundleById(lease.project, bundleId),
-						settings: await lease.project.settings.get(),
-					}))
-					if (data.status !== "completed") return
-					panel?.webview.postMessage({
-						command: "change",
-						data: data.value,
-					})
-				}
+				if (e.webviewPanel.visible) await postData()
 			},
 			null,
 			disposables
 		)
 
-		// Provide the same HTML you had before
+		// Listen before the page loads: it asks for the data once it is ready ("ready")
+		setWebviewMessageListener(panel.webview)
 		panel.webview.html = getHtmlForWebview(panel.webview)
+	}
 
-		// Set initial data
-		const initialData = await lease.runTask(async () => ({
+	/** Sends the bundle as stored, and the settings, to the webview. */
+	async function postData() {
+		const data = await lease.runTask(async () => ({
 			bundle: await selectBundleById(lease.project, bundleId),
 			settings: await lease.project.settings.get(),
 		}))
-		if (initialData.status !== "completed") return
-		panel.webview.postMessage({
+		if (data.status !== "completed") return
+		await panel?.webview.postMessage({
 			command: "change",
-			data: initialData.value,
+			data: data.value,
 		})
-
-		// Set up the same message listener logic
-		setWebviewMessageListener(panel.webview)
 	}
 
 	/**
@@ -134,6 +124,10 @@ export function editorView(args: {
 			const command = message.command
 
 			switch (command) {
+				case "ready":
+					// the page loaded (messages posted before that are lost)
+					await postData()
+					return
 				case "create-message":
 					await queueMutation(() =>
 						createMessage({ db: lease.project.db, message: message.message })

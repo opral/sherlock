@@ -57,7 +57,7 @@ export function TranslationProblems({
 					<li key={key} className="problem" title={problem.message}>
 						<Icon name="warning" />
 						{multipleForms && variant && variant.id !== selectedVariantId ? (
-							<>
+							<span>
 								<button
 									type="button"
 									className="link"
@@ -67,7 +67,7 @@ export function TranslationProblems({
 									{formLabel(variant, message, declarations)}
 								</button>
 								{`: ${text}`}
-							</>
+							</span>
 						) : (
 							text
 						)}
