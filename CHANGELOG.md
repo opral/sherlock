@@ -1,5 +1,30 @@
 # Sherlock
 
+## 2.5.0
+
+### Minor Changes
+
+- 4709986: A new message editor, translation problems from the inlang SDK, and machine translation with inlang Cloud.
+  - **New editor**, built from the composable components of `@inlang/editor-component` 13 and themed with VS Code's colors, so it looks native in light, dark and high-contrast themes. Each language has a row with its translation. Plural and select forms are shown as a list or grid with example numbers ("one: 1, 21, 31…"), and "+ Add form" marks a form the language still needs. Type a variable like `{count}` to insert it.
+  - **Plural & select**: choose the text by a number (plural or ordinal), add exact numbers like `=0`, or choose it by a value (select). The change applies to every language.
+  - **Translation problems** come from the SDK's checks, the same rules the inlang CLI and Parrot use. Missing or unknown variables (with a "did you mean"), missing markup, empty forms and missing forms are shown below the translation in the editor and in the hover of a message in your code.
+  - **Edits are saved together**: the rows of one edit are written in one transaction, and only the rows that changed. A variable typed into a translation is declared for the message. Deleting a message asks for confirmation and closes its editor.
+  - **Machine translate…**: next to an empty translation and as the command "Sherlock: Machine translate…" (also "Sherlock: inlang Cloud"). It shows what's coming in inlang Cloud (AI translation that keeps your tone of voice and terminology, translations that fit the design, smart message keys, automatic handoff between design, translation and code) with a link to tell us what you need, and the inlang CLI command `npx @inlang/cli machine translate` to translate locally today.
+  - The editor webview no longer ships the Lix engine: the extension package shrinks from about 51 MB to 28 MB.
+  - The inline preview and the hover of a plural with an exact number (`=0`) show the "other" form instead of "not found".
+
+- c924522: Upgrade to the inlang SDK 4.0 and the editor component 13.
+  - Sherlock reads and writes messages with the SDK 4 table and column names (`inlang_bundle`, `inlang_message`, `inlang_variant`, `bundle_id`, `message_id`). Edits, new translations and deletions in the editor write only the inlang columns, never the `lixcol_*` columns Lix adds to every row.
+  - Saving keeps translation files byte-identical except for the messages you edited: with `@inlang/plugin-message-format` 4.5 (any `@4` URL), unchanged entries keep their text, key order, escaping and indentation, and existing flat keys with dots (`"nav.home"`) stay flat.
+  - Deleting a message deletes its translations and variants in one transaction.
+  - New messages and variants get uuid v7 ids, so forms keep the order in which they were added.
+  - "Create project" sets up the message-format plugin (`messages/{locale}.json`) and the m-function matcher, instead of a project without plugins.
+  - The edit command (pencil in the hover) writes the edit to the translation files right away. Before, the edit stayed in memory until the next save and was lost on reload.
+
+### Patch Changes
+
+- 274d30b: Usage telemetry follows VS Code's `telemetry.telemetryLevel` (usage events are only sent at `all`) and goes to the inlang PostHog project shared with Parrot and Fink, through the inlang.com relay. Events are named `category:object_action` (e.g. `message:message_create`, `cloud:interest_button_click`) with `app: "sherlock"`. Only hashed ids and counts are sent: message keys and project errors are no longer part of events. The unused PostHog EU client, the Sentry error monitoring are removed, and the `sherlock.userId` setting that the old client wrote into your user settings is deleted.
+
 ## 2.4.6
 
 ### Patch Changes
