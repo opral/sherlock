@@ -18,7 +18,7 @@ export const deleteVariant = async ({
 }) => {
 	try {
 		// Delete the variant
-		await db.deleteFrom("variant").where("variant.id", "=", variantId).execute()
+		await db.deleteFrom("inlang_variant").where("inlang_variant.id", "=", variantId).execute()
 	} catch (error) {
 		console.error("Failed to delete variant", error)
 		msg(`Failed to delete variant. ${String(error)}`, "error")

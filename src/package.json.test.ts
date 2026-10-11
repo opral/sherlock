@@ -14,12 +14,12 @@ describe("production build", () => {
 		const files = readdirSync(assets)
 		const wasmFiles = files.filter((file) => file.endsWith(".wasm"))
 		const engine = readFileSync(new URL("../dist/wasm/lix_js_sdk_bg.wasm", import.meta.url))
-		// Dedicated and shared workers must reuse one copy of the engine.
+		// Dedicated and repository workers must reuse one copy of the engine.
 		expect(
 			wasmFiles.filter((file) => readFileSync(new URL(file, assets)).equals(engine))
 		).toHaveLength(1)
 		expect(files.filter((file) => /^entry\.browser.*\.js$/.test(file))).toHaveLength(1)
-		expect(files.filter((file) => /^entry\.shared\.browser.*\.js$/.test(file))).toHaveLength(1)
+		expect(files.filter((file) => /^entry\.repository\.browser.*\.js$/.test(file))).toHaveLength(1)
 		const scripts = files
 			.filter((file) => file.endsWith(".js"))
 			.map((file) => readFileSync(new URL(file, assets), "utf8"))

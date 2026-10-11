@@ -8,7 +8,7 @@ import { capture } from "../services/telemetry/index.js"
 import { humanId, upsertBundleNested } from "@inlang/sdk"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 import { state } from "../utilities/state.js"
-import { v4 as uuidv4 } from "uuid"
+import { v7 as uuidv7 } from "uuid"
 
 const runtimeLease = vi.hoisted(() => ({
 	runTask: vi.fn(),
@@ -78,7 +78,7 @@ vi.mock("../utilities/project/projectResourceSynchronization.js", () => ({
 }))
 
 vi.mock("uuid", () => ({
-	v4: vi.fn().mockReturnValue("mocked-uuid-123"),
+	v7: vi.fn().mockReturnValue("mocked-uuid-123"),
 }))
 
 describe("createMessageCommand", () => {

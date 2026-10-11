@@ -1,4 +1,4 @@
-import { BundleNested, Message, ProjectSettings } from "@inlang/sdk"
+import type { BundleNested, MessageRow, ProjectSettings } from "@inlang/sdk"
 import { vscode } from "../utils/vscode.js"
 import React from "react"
 import {
@@ -12,7 +12,7 @@ import {
 } from "@inlang/editor-component"
 import { createComponent } from "@lit/react"
 import { SlDialog, SlDropdown, SlMenu, SlMenuItem } from "@shoelace-style/shoelace/dist/react"
-import { v4 as uuidv4 } from "uuid"
+import { v7 as uuidv7 } from "uuid"
 
 const ReactInlangBundle = createComponent({
 	tagName: "inlang-bundle",
@@ -90,7 +90,7 @@ const Editor: React.FC<{
 		vscode.postMessage({ command, id: message.id })
 	}
 
-	const createMessage = async (message: Message) => {
+	const createMessage = async (message: MessageRow) => {
 		if (message) {
 			vscode.postMessage({
 				command: "create-message",
@@ -221,11 +221,11 @@ const Editor: React.FC<{
 							</ReactInlangMessage>
 						)
 					} else {
-						const message: Message = {
-							id: uuidv4(),
+						const message: MessageRow = {
+							id: uuidv7(),
 							selectors: [],
 							locale,
-							bundleId: bundle.id,
+							bundle_id: bundle.id,
 						}
 						return (
 							<ReactInlangMessage

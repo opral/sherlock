@@ -55,19 +55,19 @@ export const editMessageCommand = {
 			const updated = await lease.runTask(async () => {
 				await lease.project.db.transaction().execute(async (trx) => {
 					await trx
-						.updateTable("message")
+						.updateTable("inlang_message")
 						.set({
 							selectors: message.selectors,
 						})
-						.where("message.id", "=", message.id)
+						.where("inlang_message.id", "=", message.id)
 						.execute()
 
 					return await trx
-						.updateTable("variant")
+						.updateTable("inlang_variant")
 						.set({
 							pattern: variant.pattern,
 						})
-						.where("variant.id", "=", variant.id)
+						.where("inlang_variant.id", "=", variant.id)
 						.returningAll()
 						.execute()
 				})

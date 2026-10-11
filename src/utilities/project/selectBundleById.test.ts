@@ -17,6 +17,6 @@ describe("selectBundleById", () => {
 			id: "welcome",
 		})
 		expect(selectBundleNested).toHaveBeenCalledWith(project.db)
-		expect(where).toHaveBeenCalledWith("bundle.id", "=", "welcome")
+		expect(where).toHaveBeenCalledWith("inlang_bundle.id", "=", "welcome")
 	})
 })

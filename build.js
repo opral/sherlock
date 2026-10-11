@@ -84,7 +84,7 @@ if (isDev) {
 
 const ctx = await context(buildOptions)
 
-await fs.rm(buildOptions.outdir, { recursive: true, force: true })
+await fs.rm(buildOptions.outdir ?? "./dist/", { recursive: true, force: true })
 await copyDependencies()
 await copyDirectories()
 

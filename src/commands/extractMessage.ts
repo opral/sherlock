@@ -11,7 +11,7 @@ import {
 	type InlangProject,
 	type NewBundleNested,
 } from "@inlang/sdk"
-import { v4 as uuidv4 } from "uuid"
+import { v7 as uuidv7 } from "uuid"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 
@@ -128,19 +128,19 @@ export const extractMessageCommand = {
 			return msg("Couldn't find choosen extract option.", "warn", "notification")
 		}
 
-		const messageId = uuidv4()
+		const messageId = uuidv7()
 		const bundle: NewBundleNested = {
 			id: bundleId,
 			declarations: [],
 			messages: [
 				{
-					bundleId,
+					bundle_id: bundleId,
 					id: messageId,
 					locale: baseLocale,
 					selectors: [],
 					variants: [
 						{
-							messageId,
+							message_id: messageId,
 							matches: [],
 							pattern: [
 								{

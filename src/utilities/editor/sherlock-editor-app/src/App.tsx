@@ -2,7 +2,7 @@ import "./App.css"
 import { useState } from "react"
 import { vscode } from "./utils/vscode.js"
 import Editor from "./components/Editor.js"
-import { BundleNested, ProjectSettings } from "@inlang/sdk"
+import type { BundleNested, ProjectSettings } from "@inlang/sdk"
 
 type VscodeMessage = {
 	command: "change"

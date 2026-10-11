@@ -116,7 +116,7 @@ describe("messagePreview", () => {
 					locale: "ckb",
 					variants: [
 						{
-							messageId: "root_title_ckb",
+							message_id: "root_title_ckb",
 							matches: [{ type: "catchall-match" }],
 							pattern: [{ type: "text", value: "سەردێڕ" }],
 						},
@@ -126,7 +126,7 @@ describe("messagePreview", () => {
 					locale: "en",
 					variants: [
 						{
-							messageId: "root_title_en",
+							message_id: "root_title_en",
 							matches: [{ type: "catchall-match" }],
 							pattern: [{ type: "text", value: "Root title" }],
 						},
