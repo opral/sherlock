@@ -2,6 +2,7 @@ import type { BundleRow, InlangDatabaseSchema, MessageRow, VariantRow } from "@i
 import { msg } from "../../messages/msg.js"
 import type { UpdateBundleMessage } from "../editorView.js"
 import type { Kysely } from "kysely"
+import { deleteBundleNested } from "./deleteBundleNested.js"
 
 /**
  * Handle the update of a bundle, message or variant that the editor sent.
@@ -84,6 +85,6 @@ async function deleteEntity(
 			await trx.deleteFrom("inlang_message").where("inlang_message.id", "=", id).execute()
 		})
 	} else {
-		throw new Error(`Deleting a ${entity} is not supported here.`)
+		await deleteBundleNested({ db, bundleId: id })
 	}
 }

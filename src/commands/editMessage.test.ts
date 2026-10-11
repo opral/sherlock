@@ -47,6 +47,10 @@ vi.mock("../utilities/project/selectBundleById.js", () => ({
 	selectBundleById: vi.fn(),
 }))
 
+vi.mock("../utilities/project/projectResourceSynchronization.js", () => ({
+	saveProjectResources: vi.fn(),
+}))
+
 vi.mock("../utilities/project/projectRuntime.js", () => ({
 	getProjectRuntime: () => ({
 		activeProject: () => {

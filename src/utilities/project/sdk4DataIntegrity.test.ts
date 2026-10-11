@@ -212,8 +212,8 @@ describe("SDK 4 data integrity", () => {
 
 	it("edits a message through the edit command (updateTable on inlang_message / inlang_variant)", async () => {
 		vi.mocked(vscode.window.showInputBox).mockResolvedValueOnce("Good bye")
+		// the command saves by itself
 		await editMessageCommand.callback({ bundleId: "farewell", locale: "en" })
-		await save()
 
 		expect(await read("messages/en.json")).toBe(
 			EN.replace(`"farewell": "Bye"`, `"farewell": "Good bye"`)
@@ -310,6 +310,8 @@ describe("SDK 4 data integrity", () => {
 		await deleteVariant({ db: project.db, variantId: one.id })
 		await save()
 
+		// message-format writes an edited message as a whole: the `items` entry is re-serialized
+		// (its inline arrays become multi-line), every other entry keeps its text
 		const after = await read("messages/en.json")
 		expect(after).not.toContain(`"countPlural=one"`)
 		expect(after).toContain(`"countPlural=other": "{count} items"`)
@@ -317,6 +319,16 @@ describe("SDK 4 data integrity", () => {
 			EN.replace(/ {2}"items": \[[\s\S]*?\n {2}\],\n/, "")
 		)
 		expect(await read("messages/de.json")).toBe(DE)
+	})
+
+	it("deletes a bundle that the editor reports as deleted (a change without newData)", async () => {
+		await handleUpdateBundle({
+			db: project.db,
+			message: { command: "change", change: { entity: "bundle", entityId: "zebra" } },
+		})
+		expect(await selectBundleById(project, "zebra")).toBeUndefined()
+		await save()
+		expect(await read("messages/en.json")).toBe(EN.replace(`  "zebra": "Zebra",\n`, ""))
 	})
 
 	it("deletes a bundle in every locale and keeps the rest of the files", async () => {

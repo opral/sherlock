@@ -5,6 +5,7 @@ import { CONFIGURATION } from "../configuration.js"
 import { type Bundle, type InlangProject } from "@inlang/sdk"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
+import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 
 export const editMessageCommand = {
 	command: "sherlock.editMessage",
@@ -71,6 +72,8 @@ export const editMessageCommand = {
 						.returningAll()
 						.execute()
 				})
+				// write the edit to the translation files, like creating a message does
+				await saveProjectResources(lease.project, lease.path)
 				return true
 			})
 			if (updated.status !== "completed") {
