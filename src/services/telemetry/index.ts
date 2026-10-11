@@ -4,7 +4,7 @@ import { ENV_VARIABLES } from "../env-variables/index.js"
 import { state } from "../../utilities/state.js"
 
 /**
- * Anonymous usage telemetry, shared with the other inlang apps (Parrot, Fink, Paraglide JS) in one
+ * Usage telemetry, shared with the other inlang apps (Parrot, Fink, Paraglide JS) in one
  * PostHog project (US). Events follow PostHog's `category:object_action` naming; the app is a
  * property, not part of the event name. Only event names, counts and hashed ids are sent - never
  * message texts, message keys or file names.
@@ -35,8 +35,17 @@ type Properties = Record<string, string | number | boolean | undefined>
 let logger: vscode.TelemetryLogger | undefined
 let appVersion = ""
 
+/** A hash of an id, specific to Sherlock (salted), so that it can't be joined with other data. */
 export function hashId(id: string) {
-	return crypto.createHash("sha256").update(id).digest("hex").slice(0, 32)
+	return crypto.createHash("sha256").update(`sherlock:${id}`).digest("hex").slice(0, 32)
+}
+
+/**
+ * VS Code puts the extension id in front of event names ("inlang.vs-code-extension/app:…").
+ * The shared PostHog project uses the plain `category:object_action` names.
+ */
+export function eventNameWithoutExtensionId(eventName: string) {
+	return eventName.slice(eventName.lastIndexOf("/") + 1)
 }
 
 export function buildCapturePayload(args: {
@@ -54,6 +63,8 @@ export function buildCapturePayload(args: {
 			app: "sherlock",
 			app_version: appVersion,
 			vscode_version: vscode.version,
+			// VS Code or a fork (Cursor, Windsurf, …)
+			editor: vscode.env.appName,
 			platform: process.platform,
 			...args.properties,
 		},
@@ -78,7 +89,7 @@ export function initTelemetry(args: { extensionMode: vscode.ExtensionMode; versi
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(
 						buildCapturePayload({
-							event: eventName,
+							event: eventNameWithoutExtensionId(eventName),
 							distinctId,
 							properties: (data ?? {}) as Properties,
 							timestamp: new Date().toISOString(),
@@ -102,7 +113,8 @@ export function initTelemetry(args: { extensionMode: vscode.ExtensionMode; versi
  * the active project.
  */
 export async function capture(args: { event: TelemetryEvent; properties?: Properties }) {
-	if (!logger) return
+	// usage data only at telemetry level "all": nothing to look up otherwise
+	if (!logger?.isUsageEnabled) return
 	let projectId: string | undefined
 	try {
 		const id = await state().project?.id.get()
@@ -111,4 +123,18 @@ export async function capture(args: { event: TelemetryEvent; properties?: Proper
 		projectId = undefined
 	}
 	logger.logUsage(args.event, { ...args.properties, project_id: projectId })
+}
+
+/**
+ * The PostHog EU client of earlier versions wrote a random `sherlock.userId` into the user
+ * settings, even with telemetry off. It is no longer used: remove it.
+ */
+export async function removeLegacyUserId() {
+	try {
+		const configuration = vscode.workspace.getConfiguration("sherlock")
+		if (configuration.inspect("userId")?.globalValue === undefined) return
+		await configuration.update("userId", undefined, vscode.ConfigurationTarget.Global)
+	} catch {
+		// a leftover setting is harmless
+	}
 }

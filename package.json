@@ -163,6 +163,11 @@
 		},
 		"configuration": {
 			"properties": {
+				"sherlock.userId": {
+					"type": "string",
+					"default": "",
+					"deprecationMessage": "No longer used. Sherlock removes this setting."
+				},
 				"sherlock.disableRecommendation": {
 					"type": "array",
 					"default": []

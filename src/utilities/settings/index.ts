@@ -2,7 +2,6 @@ import * as vscode from "vscode"
 
 // TODO: migrate previewLanguageTag to previewLocale and adjust documentation
 const settingsProperty = [
-	"userId",
 	"disableRecommendation",
 	"disableConfigFileCreation",
 	"disableConfigFileDeletion",

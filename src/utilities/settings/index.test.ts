@@ -20,9 +20,9 @@ describe("Settings functions", () => {
 				update: mockUpdate,
 			})
 
-			await updateSetting("userId", "new-value")
+			await updateSetting("previewLanguageTag", "new-value")
 
-			expect(mockUpdate).toHaveBeenCalledWith("userId", "new-value", true)
+			expect(mockUpdate).toHaveBeenCalledWith("previewLanguageTag", "new-value", true)
 		})
 	})
 
@@ -35,9 +35,9 @@ describe("Settings functions", () => {
 				get: mockGet,
 			})
 
-			const result = await getSetting("userId")
+			const result = await getSetting("previewLanguageTag")
 
-			expect(mockGet).toHaveBeenCalledWith("userId")
+			expect(mockGet).toHaveBeenCalledWith("previewLanguageTag")
 			expect(result).toBe(mockValue)
 		})
 

@@ -10,7 +10,7 @@ import fs from "node:fs/promises"
 import { gettingStartedView } from "./utilities/getting-started/gettingStarted.js"
 import { closestInlangProject } from "./utilities/project/closestInlangProject.js"
 import { recommendationBannerView } from "./utilities/recommendation/recommendation.js"
-import { capture, initTelemetry } from "./services/telemetry/index.js"
+import { capture, initTelemetry, removeLegacyUserId } from "./services/telemetry/index.js"
 import packageJson from "../package.json" with { type: "json" }
 import { statusBar } from "./utilities/settings/statusBar.js"
 import fg from "fast-glob"
@@ -32,6 +32,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 		version: packageJson.version,
 	})
 	if (telemetryLogger) context.subscriptions.push(telemetryLogger)
+	void removeLegacyUserId()
 
 	try {
 		vscode.commands.executeCommand("setContext", "sherlock:hasProjectInWorkspace", false)

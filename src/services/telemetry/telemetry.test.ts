@@ -7,13 +7,24 @@ const mocks = vi.hoisted(() => ({
 	logUsage: vi.fn(),
 	createTelemetryLogger: vi.fn(),
 	isProduction: true,
+	usageEnabled: true,
+	legacyUserId: undefined as string | undefined,
+	update: vi.fn(async () => undefined),
 }))
 
 vi.mock("vscode", () => ({
 	version: "1.141.0",
 	ExtensionMode: { Production: 1, Development: 2, Test: 3 },
+	ConfigurationTarget: { Global: 1 },
+	workspace: {
+		getConfiguration: () => ({
+			inspect: () => ({ globalValue: mocks.legacyUserId }),
+			update: mocks.update,
+		}),
+	},
 	env: {
 		machineId: "machine-id-raw",
+		appName: "Visual Studio Code",
 		createTelemetryLogger: mocks.createTelemetryLogger,
 	},
 }))
@@ -35,9 +46,10 @@ beforeEach(() => {
 	vi.resetModules()
 	vi.clearAllMocks()
 	mocks.isProduction = true
+	mocks.usageEnabled = true
 	mocks.createTelemetryLogger.mockImplementation((sender) => {
 		mocks.sender = sender
-		return { logUsage: mocks.logUsage, dispose: vi.fn() }
+		return { logUsage: mocks.logUsage, dispose: vi.fn(), isUsageEnabled: mocks.usageEnabled }
 	})
 })
 
@@ -73,10 +85,19 @@ describe("telemetry", () => {
 		})
 	})
 
+	it("captures nothing below telemetry level all", async () => {
+		mocks.usageEnabled = false
+		const telemetry = await import("./index.js")
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		await telemetry.capture({ event: "app:session_start" })
+		expect(mocks.logUsage).not.toHaveBeenCalled()
+	})
+
 	it("posts to PostHog US through the inlang.com relay with hashed ids and the app property", async () => {
 		const telemetry = await import("./index.js")
 		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
-		mocks.sender!.sendEventData("app:session_start", { project_id: "abc" })
+		// VS Code prefixes the extension id
+		mocks.sender!.sendEventData("inlang.vs-code-extension/app:session_start", { project_id: "abc" })
 		expect(fetchMock).toHaveBeenCalledOnce()
 		const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
 		expect(url).toBe("https://inlang.com/relay/i/v0/e/")
@@ -88,10 +109,20 @@ describe("telemetry", () => {
 				app: "sherlock",
 				app_version: "2.5.0",
 				vscode_version: "1.141.0",
+				editor: "Visual Studio Code",
 				project_id: "abc",
 			},
 		})
 		expect(JSON.stringify(body)).not.toContain("machine-id-raw")
 		expect(body.api_key).toMatch(/^phc_/)
+	})
+
+	it("removes the user id that earlier versions wrote into the user settings", async () => {
+		const telemetry = await import("./index.js")
+		await telemetry.removeLegacyUserId()
+		expect(mocks.update).not.toHaveBeenCalled()
+		mocks.legacyUserId = "123e4567-e89b-12d3-a456-426614174000"
+		await telemetry.removeLegacyUserId()
+		expect(mocks.update).toHaveBeenCalledWith("userId", undefined, 1)
 	})
 })
