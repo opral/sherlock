@@ -247,9 +247,10 @@ describe("handleTreeSelection", () => {
 		expect(getProjectRuntime().replaceProject).toHaveBeenCalledWith(selectedNode.path)
 		expect(capture).toBeCalledWith(
 			expect.objectContaining({
-				event: "IDE-EXTENSION loaded project",
+				event: "project:project_load",
 				properties: expect.objectContaining({
-					errors: errors,
+					// a count, never the errors (they can contain paths)
+					error_count: errors.length,
 				}),
 			})
 		)

@@ -23,8 +23,7 @@ export class ExtractMessage implements vscode.CodeActionProvider {
 
 	public async resolveCodeAction(): Promise<vscode.CodeAction> {
 		capture({
-			event: "IDE-EXTENSION code action resolved",
-			properties: { name: "extract message" },
+			event: "message:code_action_resolve",
 		})
 
 		// Replace the following line with your code logic

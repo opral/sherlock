@@ -43,10 +43,7 @@ export function createOpenEditorViewCallback(args: {
 		openEditors.set(key, editor)
 		await editor.createOrShowPanel()
 
-		capture({
-			event: "IDE-EXTENSION Editor View opened",
-			properties: { bundleId: commandArgs.bundleId },
-		})
+		capture({ event: "editor:editor_open" })
 		return undefined
 	}
 }

@@ -172,7 +172,7 @@ export const extractMessageCommand = {
 			CONFIGURATION.EVENTS.ON_DID_EXTRACT_MESSAGE.fire()
 
 			capture({
-				event: "IDE-EXTENSION command executed: Extract Message",
+				event: "message:message_extract",
 			})
 
 			return msg("Message extracted.")

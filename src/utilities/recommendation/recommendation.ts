@@ -25,8 +25,7 @@ export function createRecommendationView(args: {
 							})
 
 							capture({
-								event: "IDE-EXTENSION recommendation: add Sherlock to workspace",
-								properties: { outcome: "Accepted" },
+								event: "recommendation:workspace_recommendation_accept",
 							})
 
 							CONFIGURATION.EVENTS.ON_DID_RECOMMENDATION_VIEW_CHANGE.fire()

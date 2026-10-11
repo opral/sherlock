@@ -49,10 +49,8 @@ describe("Open Editor command", () => {
 		await ownedResource?.dispose()
 		expect(editor.dispose).toHaveBeenCalledWith()
 		expect(editor.createOrShowPanel).toHaveBeenCalledOnce()
-		expect(capture).toHaveBeenCalledWith({
-			event: "IDE-EXTENSION Editor View opened",
-			properties: { bundleId: "welcome" },
-		})
+		// no message key is sent
+		expect(capture).toHaveBeenCalledWith({ event: "editor:editor_open" })
 	})
 
 	it("reveals the open editor of a bundle instead of opening a second one", async () => {

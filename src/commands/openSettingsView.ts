@@ -11,7 +11,7 @@ export const openSettingsViewCommand = {
 		await settingsPanel({ context: node.context })
 
 		capture({
-			event: "IDE-EXTENSION Settings View opened",
+			event: "settings:settings_view_open",
 		})
 		return undefined
 	},

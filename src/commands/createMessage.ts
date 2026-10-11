@@ -87,7 +87,7 @@ export const createMessageCommand = {
 			CONFIGURATION.EVENTS.ON_DID_CREATE_MESSAGE.fire()
 
 			capture({
-				event: "IDE-EXTENSION command executed: Create Message",
+				event: "message:message_create",
 			})
 
 			return msg("Message created.")

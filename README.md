@@ -200,6 +200,10 @@ Run **Sherlock: Machine translate…** from the command palette, or click **Mach
 - **On your machine, today:** the [inlang CLI](https://inlang.com/m/2qj2w8pu/app-inlang-cli) translates the missing messages of your project with `npx @inlang/cli machine translate --project ./project.inlang`. By default it uses a free, third-party service that inlang doesn't operate; you can bring your own DeepL or Google Translate API key.
 - **inlang Cloud (coming soon):** AI translation that keeps your tone of voice and terminology, translations that fit the design, smart message keys, and automatic handoff between design, translation and code. [Tell us what your team needs](https://docs.google.com/forms/d/e/1FAIpQLSdwui1r1rFu1AXMPKa-g2ggDHOTvNFrmrxWDubaaYLHv8_4Mg/viewform?usp=pp_url&entry.14901479=Sherlock).
 
+## Telemetry
+
+Sherlock sends usage events (for example "a message was created" or "the cloud page was opened") to help us improve it. It sends event names, counts and hashed ids, never message texts, message keys or file names. Sherlock follows VS Code's `telemetry.telemetryLevel` setting: events are only sent when it is `all`.
+
 ## Customization
 
 ### Custom preview language

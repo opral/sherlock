@@ -4,6 +4,7 @@ import { getNonce } from "../editor/helper/getNonce.js"
 import { escapeHtml } from "../utils.js"
 import { CLOUD_FEATURES, CLOUD_INTEREST_FORM_URL, machineTranslateCommand } from "./cloudContent.js"
 import { getProjectRuntime } from "../project/projectRuntime.js"
+import { capture } from "../../services/telemetry/index.js"
 
 export type CloudHintSource = "command" | "editor"
 
@@ -36,7 +37,8 @@ function relativeProjectPath() {
  * "inlang Cloud": hosted AI translation and the other cloud services that are coming, with a
  * button to the interest form, and the inlang CLI for machine translation on your machine today.
  */
-export function showCloudPanel(_args: { source: CloudHintSource }) {
+export function showCloudPanel(args: { source: CloudHintSource }) {
+	void capture({ event: "cloud:page_view", properties: { source: args.source } })
 	// the active project can change while the page is open: the command is read when it is used
 	const currentCommand = () => machineTranslateCommand(relativeProjectPath())
 	if (panel) {
@@ -64,6 +66,7 @@ export function showCloudPanel(_args: { source: CloudHintSource }) {
 		const command = currentCommand()
 		switch (message?.command) {
 			case "open-form":
+				void capture({ event: "cloud:interest_button_click", properties: { source: args.source } })
 				await openCloudInterestForm()
 				return
 			case "copy-command":

@@ -84,7 +84,7 @@ describe("jumpToPositionCommand", () => {
 		expect(vscode.Range).toHaveBeenCalled()
 		expect(vscode.window.activeTextEditor?.revealRange).toHaveBeenCalled()
 		expect(captureSpy).toHaveBeenCalledWith({
-			event: "IDE-EXTENSION jumped to position in editor",
+			event: "message:position_jump",
 		})
 	})
 })
