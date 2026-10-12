@@ -202,7 +202,7 @@ Run **Sherlock: Machine translate…** from the command palette, or click **Mach
 
 ## Telemetry
 
-Sherlock sends usage events (for example "a message was created" or "the cloud page was opened") to help us improve it. It sends event names, counts and hashed ids, never message texts, message keys or file names. Sherlock follows VS Code's `telemetry.telemetryLevel` setting: events are only sent when it is `all`.
+Sherlock sends usage events (for example "a message was created", "the cloud page was opened" or how many messages and languages a project has) to help us improve it. It sends event names, counts and hashed ids, never message texts, message keys or file names. Sherlock follows VS Code's `telemetry.telemetryLevel` setting: events are only sent when it is `all`.
 
 ## Customization
 

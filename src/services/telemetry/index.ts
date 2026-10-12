@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 import crypto from "node:crypto"
+import path from "node:path"
 import { ENV_VARIABLES } from "../env-variables/index.js"
 import { state } from "../../utilities/state.js"
 
@@ -8,6 +9,11 @@ import { state } from "../../utilities/state.js"
  * PostHog project (US). Events follow PostHog's `category:object_action` naming; the app is a
  * property, not part of the event name. Only event names, counts and hashed ids are sent - never
  * message texts, message keys or file names.
+ *
+ * `project:project_view` is sent once whenever a project finishes loading (at activation and when
+ * the user switches project). It carries the size of the project - `message_count` (bundles) and
+ * `language_count` (locales) - which the shared dashboard shows next to Fink and Parrot, plus
+ * `error_count` and `in_workspace_recommendation`.
  *
  * Events go through the reverse proxy on inlang.com. They are sent through VS Code's telemetry
  * logger, so they honour `telemetry.telemetryLevel`: usage events are only sent at level "all".
@@ -19,7 +25,7 @@ const POSTHOG_TOKEN = "phc_xTDR5yXmkYykE7mct3fgxqDSFcJdg4nELhqWwEkUzdLH"
 
 export type TelemetryEvent =
 	| "app:session_start"
-	| "project:project_load"
+	| "project:project_view"
 	| "message:message_create"
 	| "message:message_extract"
 	| "message:code_action_resolve"
@@ -38,6 +44,20 @@ let appVersion = ""
 /** A hash of an id, specific to Sherlock (salted), so that it can't be joined with other data. */
 export function hashId(id: string) {
 	return crypto.createHash("sha256").update(`sherlock:${id}`).digest("hex").slice(0, 32)
+}
+
+/**
+ * A hash that identifies a project across loads, restarts and reloads after file changes. The id
+ * of a project that is loaded from a directory (`project.id`) is new on every load, which would
+ * make every load a new project in the dashboard: the path of the project is hashed instead. The
+ * machine id is part of the input, so that the path can't be guessed from the hash, and the path
+ * itself is never sent.
+ */
+export function hashProjectPath(projectPath: string) {
+	const normalized = path.normalize(projectPath).replaceAll("\\", "/")
+	return hashId(
+		`project:${vscode.env.machineId}:${process.platform === "win32" ? normalized.toLowerCase() : normalized}`
+	)
 }
 
 /**
@@ -109,16 +129,29 @@ export function initTelemetry(args: { extensionMode: vscode.ExtensionMode; versi
 }
 
 /**
+ * Whether usage events are sent right now: telemetry runs (production install) and the user's
+ * telemetry level is "all". For callers that would do work, like queries, only to build an event.
+ */
+export function isUsageEnabled() {
+	return logger?.isUsageEnabled === true
+}
+
+/**
  * Captures a usage event, if the user's telemetry level allows usage data. Adds the hashed id of
- * the active project.
+ * the active project (see `hashProjectPath`).
  */
 export async function capture(args: { event: TelemetryEvent; properties?: Properties }) {
 	// usage data only at telemetry level "all": nothing to look up otherwise
 	if (!logger?.isUsageEnabled) return
+	// Keep this synchronous up to the state() read: callers check that their project is still the
+	// active one right before calling, so that the project id belongs to the project they measured.
 	let projectId: string | undefined
 	try {
-		const id = await state().project?.id.get()
-		projectId = typeof id === "string" ? hashId(id) : undefined
+		const current = state()
+		projectId =
+			current?.project && current.selectedProjectPath
+				? hashProjectPath(current.selectedProjectPath)
+				: undefined
 	} catch {
 		projectId = undefined
 	}

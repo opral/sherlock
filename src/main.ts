@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 import { handleError } from "./utilities/utils.js"
 import { CONFIGURATION } from "./configuration.js"
 import { projectView } from "./utilities/project/project.js"
+import { captureProjectView } from "./utilities/project/projectViewTelemetry.js"
 import { setProjectsInWorkspace, state } from "./utilities/state.js"
 import { errorView } from "./utilities/errors/errors.js"
 import { messageView, type MessageViewController } from "./utilities/messages/messages.js"
@@ -96,6 +97,10 @@ async function activateInitialProjectSession(args: {
 		vscode.commands.executeCommand("setContext", "sherlock:hasProjectInWorkspace", true)
 		const result = await getProjectRuntime().replaceProject(selectedProjectPath)
 		if (result.status === "failed") handleError(result.error)
+		// fire and forget: telemetry never delays or fails activation
+		if (result.status === "committed") {
+			void captureProjectView({ fs: args.fs, workspaceFolder: args.workspaceFolder })
+		}
 
 		return
 	} else {

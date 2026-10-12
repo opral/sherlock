@@ -1,11 +1,10 @@
 import * as vscode from "vscode"
 import { CONFIGURATION } from "../../configuration.js"
-import { capture } from "../../services/telemetry/index.js"
 import { state } from "../state.js"
-import * as Sherlock from "@inlang/recommend-sherlock"
 import type { FileSystem } from "../fs/createFileSystemMapper.js"
 import path from "node:path"
 import { getProjectRuntime } from "./projectRuntime.js"
+import { captureProjectView } from "./projectViewTelemetry.js"
 import type { InlangProject } from "@inlang/sdk"
 
 let projectViewNodes: ProjectViewNode[] = []
@@ -108,23 +107,8 @@ export async function handleTreeSelection(args: {
 			isSelected: node.path === args.selectedNode.path,
 		}))
 
-		const isInWorkspaceRecommendation = await Sherlock.shouldRecommend({
-			fs: args.fs,
-			workingDirectory: path.normalize(args.workspaceFolder.uri.fsPath),
-		})
-
-		const activeProject = getProjectRuntime<InlangProject>().activeProject()
-		const projectErrors = activeProject
-			? await activeProject.runTask(() => activeProject.project.errors.get())
-			: undefined
-		capture({
-			event: "project:project_load",
-			properties: {
-				// a count only: errors can contain paths
-				error_count: projectErrors?.status === "completed" ? projectErrors.value.length : 0,
-				in_workspace_recommendation: isInWorkspaceRecommendation,
-			},
-		})
+		// fire and forget: telemetry never delays or fails loading a project
+		void captureProjectView({ fs: args.fs, workspaceFolder: args.workspaceFolder })
 	} catch (error) {
 		vscode.window.showErrorMessage(`Failed to load project "${selectedProject}": ${error}`)
 	}
