@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 import crypto from "node:crypto"
+import path from "node:path"
 import { ENV_VARIABLES } from "../env-variables/index.js"
 import { state } from "../../utilities/state.js"
 
@@ -43,6 +44,20 @@ let appVersion = ""
 /** A hash of an id, specific to Sherlock (salted), so that it can't be joined with other data. */
 export function hashId(id: string) {
 	return crypto.createHash("sha256").update(`sherlock:${id}`).digest("hex").slice(0, 32)
+}
+
+/**
+ * A hash that identifies a project across loads, restarts and reloads after file changes. The id
+ * of a project that is loaded from a directory (`project.id`) is new on every load, which would
+ * make every load a new project in the dashboard: the path of the project is hashed instead. The
+ * machine id is part of the input, so that the path can't be guessed from the hash, and the path
+ * itself is never sent.
+ */
+export function hashProjectPath(projectPath: string) {
+	const normalized = path.normalize(projectPath).replaceAll("\\", "/")
+	return hashId(
+		`project:${vscode.env.machineId}:${process.platform === "win32" ? normalized.toLowerCase() : normalized}`
+	)
 }
 
 /**
@@ -123,15 +138,18 @@ export function isUsageEnabled() {
 
 /**
  * Captures a usage event, if the user's telemetry level allows usage data. Adds the hashed id of
- * the active project.
+ * the active project (see `hashProjectPath`).
  */
 export async function capture(args: { event: TelemetryEvent; properties?: Properties }) {
 	// usage data only at telemetry level "all": nothing to look up otherwise
 	if (!logger?.isUsageEnabled) return
 	let projectId: string | undefined
 	try {
-		const id = await state().project?.id.get()
-		projectId = typeof id === "string" ? hashId(id) : undefined
+		const current = state()
+		projectId =
+			current?.project && current.selectedProjectPath
+				? hashProjectPath(current.selectedProjectPath)
+				: undefined
 	} catch {
 		projectId = undefined
 	}
