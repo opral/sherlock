@@ -9,8 +9,12 @@ import { getProjectSize } from "./projectSize.js"
 
 /**
  * Reports `project:project_view` for the project that was just loaded: its size (`message_count`,
- * `language_count`), the number of project errors and whether the workspace recommends Sherlock.
+ * `language_count`), the number of project errors and `in_workspace_recommendation`.
  * `project_id` (a salted hash) is added by `capture`.
+ *
+ * `in_workspace_recommendation` is the value of `Sherlock.shouldRecommend`: `true` when Sherlock
+ * is NOT in the workspace's recommended extensions yet. The name is kept for continuity with the
+ * earlier `project:project_load` event.
  *
  * Call it once per load, after `replaceProject` committed: at activation and when the user
  * switches project. It is not called for edits, nor for the reloads that follow changes of the

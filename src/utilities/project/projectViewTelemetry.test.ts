@@ -124,14 +124,26 @@ describe("captureProjectView", () => {
 	})
 
 	it("sends nothing if another project replaced it while counting: that one reports itself", async () => {
-		mocks.activeProject.mockReturnValue(lease({ isCurrent: vi.fn(() => false) }))
+		let current = true
+		mocks.activeProject.mockReturnValue(
+			lease({
+				isCurrent: vi.fn(() => current),
+				// the user switches project while the counts are being read
+				runTask: vi.fn(async <T>(task: () => Promise<T>) => {
+					const value = await task()
+					current = false
+					return { status: "completed" as const, value }
+				}),
+			})
+		)
 
 		await captureProjectView({ fs, workspaceFolder })
 
+		expect(mocks.getProjectSize).toHaveBeenCalledOnce()
 		expect(mocks.capture).not.toHaveBeenCalled()
 	})
 
-	it.each([
+	const failures: Array<[name: string, arrange: () => unknown, reachedCapture?: boolean]> = [
 		["the count fails", () => mocks.getProjectSize.mockRejectedValueOnce(new Error("db closed"))],
 		[
 			"reading the errors fails",
@@ -152,7 +164,7 @@ describe("captureProjectView", () => {
 			"the recommendation lookup fails",
 			() => mocks.shouldRecommend.mockRejectedValueOnce(new Error("EACCES")),
 		],
-		["capture fails", () => mocks.capture.mockRejectedValueOnce(new Error("offline"))],
+		["capture fails", () => mocks.capture.mockRejectedValueOnce(new Error("offline")), true],
 		[
 			"the runtime is not initialized",
 			() =>
@@ -167,9 +179,13 @@ describe("captureProjectView", () => {
 					throw new Error("no logger")
 				}),
 		],
-	])("never throws when %s", async (_name, arrange) => {
+	]
+
+	it.each(failures)("never throws when %s", async (_name, arrange, reachedCapture = false) => {
 		arrange()
 
 		await expect(captureProjectView({ fs, workspaceFolder })).resolves.toBeUndefined()
+		// the failure happened where it was meant to: nothing was sent before it, or capture was reached
+		expect(mocks.capture).toHaveBeenCalledTimes(reachedCapture ? 1 : 0)
 	})
 })

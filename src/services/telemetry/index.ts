@@ -143,6 +143,8 @@ export function isUsageEnabled() {
 export async function capture(args: { event: TelemetryEvent; properties?: Properties }) {
 	// usage data only at telemetry level "all": nothing to look up otherwise
 	if (!logger?.isUsageEnabled) return
+	// Keep this synchronous up to the state() read: callers check that their project is still the
+	// active one right before calling, so that the project id belongs to the project they measured.
 	let projectId: string | undefined
 	try {
 		const current = state()

@@ -16,6 +16,6 @@ export async function getProjectSize(project: InlangProject) {
 	const settings = await project.settings.get()
 	return {
 		messageCount: Number(row?.count ?? 0),
-		languageCount: settings.locales.length,
+		languageCount: Array.isArray(settings.locales) ? settings.locales.length : 0,
 	}
 }

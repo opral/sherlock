@@ -209,6 +209,24 @@ describe("telemetry", () => {
 		expect(properties.project_id).toBe(telemetry.hashProjectPath(PROJECT_PATH))
 	})
 
+	it("gives the same project the same id whichever way its path is written, and a machine its own ids", async () => {
+		const telemetry = await import("./index.js")
+		// fast-glob finds "C:/work/p.inlang" at activation, the project tree passes path.normalize()d "C:\\work\\p.inlang"
+		expect(telemetry.hashProjectPath("C:\\work\\p.inlang")).toBe(
+			telemetry.hashProjectPath("C:/work/p.inlang")
+		)
+
+		const idOnThisMachine = telemetry.hashProjectPath(PROJECT_PATH)
+		const vscode = await import("vscode")
+		const env = vscode.env as { machineId: string }
+		env.machineId = "another-machine-id"
+		try {
+			expect(telemetry.hashProjectPath(PROJECT_PATH)).not.toBe(idOnThisMachine)
+		} finally {
+			env.machineId = "machine-id-raw"
+		}
+	})
+
 	it("adds no project id without an active project", async () => {
 		const telemetry = await import("./index.js")
 		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
