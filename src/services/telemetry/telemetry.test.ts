@@ -117,6 +117,56 @@ describe("telemetry", () => {
 		expect(body.api_key).toMatch(/^phc_/)
 	})
 
+	it("tells whether usage events are sent, for work that is only needed to build an event", async () => {
+		const telemetry = await import("./index.js")
+		// not started yet
+		expect(telemetry.isUsageEnabled()).toBe(false)
+		// development run: never started
+		telemetry.initTelemetry({ extensionMode: 2, version: "2.5.0" })
+		expect(telemetry.isUsageEnabled()).toBe(false)
+
+		mocks.usageEnabled = false
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		expect(telemetry.isUsageEnabled()).toBe(false)
+
+		mocks.usageEnabled = true
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		expect(telemetry.isUsageEnabled()).toBe(true)
+	})
+
+	it("posts project:project_view with the size of the project like Fink and Parrot do", async () => {
+		const telemetry = await import("./index.js")
+		telemetry.initTelemetry({ extensionMode: 1, version: "2.5.0" })
+		await telemetry.capture({
+			event: "project:project_view",
+			properties: {
+				message_count: 1234,
+				language_count: 7,
+				error_count: 0,
+				in_workspace_recommendation: false,
+			},
+		})
+		const [name, data] = mocks.logUsage.mock.calls[0] as unknown as [
+			string,
+			Record<string, unknown>,
+		]
+		expect(name).toBe("project:project_view")
+
+		// what VS Code's logger hands to the sender, with the extension id in front
+		mocks.sender!.sendEventData(`inlang.vs-code-extension/${name}`, data)
+		const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+		const body = JSON.parse(String(init.body))
+		expect(body.event).toBe("project:project_view")
+		expect(body.properties).toMatchObject({
+			app: "sherlock",
+			message_count: 1234,
+			language_count: 7,
+			error_count: 0,
+			in_workspace_recommendation: false,
+			project_id: telemetry.hashId("project-id-raw"),
+		})
+	})
+
 	it("removes the user id that earlier versions wrote into the user settings", async () => {
 		const telemetry = await import("./index.js")
 		await telemetry.removeLegacyUserId()

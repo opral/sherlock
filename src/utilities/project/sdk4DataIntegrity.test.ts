@@ -47,6 +47,7 @@ vi.mock("./projectRuntime.js", () => ({
 
 const { createProjectResourceSynchronization } = await import("./projectResourceSynchronization.js")
 const { selectBundleById } = await import("./selectBundleById.js")
+const { getProjectSize } = await import("./projectSize.js")
 const { handleUpdateBundle, applyChanges } = await import("../editor/helper/handleBundleUpdate.js")
 const { diffBundles } = await import("../editor/sherlock-editor-app/src/lib/diffBundles.js")
 const { createMessage } = await import("../editor/helper/createMessage.js")
@@ -172,6 +173,19 @@ describe("SDK 4 data integrity", () => {
 			expect(message.bundle_id).toBe("greeting")
 			for (const variant of message.variants) expect(variant.message_id).toBe(message.id)
 		}
+	})
+
+	it("counts the messages (bundles) and languages of the project for telemetry", async () => {
+		// zebra, greeting, café, nav.home, settings.title, items and farewell: one bundle per key
+		// in any locale
+		expect(await getProjectSize(project)).toEqual({ messageCount: 7, languageCount: 2 })
+
+		vi.mocked(vscode.window.showInputBox)
+			.mockResolvedValueOnce("Brand new")
+			.mockResolvedValueOnce("brand_new")
+		await createMessageCommand.callback()
+
+		expect(await getProjectSize(project)).toEqual({ messageCount: 8, languageCount: 2 })
 	})
 
 	it("keeps every file byte-identical when nothing changed", async () => {

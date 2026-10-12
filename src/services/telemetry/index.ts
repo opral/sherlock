@@ -9,6 +9,11 @@ import { state } from "../../utilities/state.js"
  * property, not part of the event name. Only event names, counts and hashed ids are sent - never
  * message texts, message keys or file names.
  *
+ * `project:project_view` is sent once whenever a project finishes loading (at activation and when
+ * the user switches project). It carries the size of the project - `message_count` (bundles) and
+ * `language_count` (locales) - which the shared dashboard shows next to Fink and Parrot, plus
+ * `error_count` and `in_workspace_recommendation`.
+ *
  * Events go through the reverse proxy on inlang.com. They are sent through VS Code's telemetry
  * logger, so they honour `telemetry.telemetryLevel`: usage events are only sent at level "all".
  * Development runs (Extension Development Host, tests) send nothing.
@@ -19,7 +24,7 @@ const POSTHOG_TOKEN = "phc_xTDR5yXmkYykE7mct3fgxqDSFcJdg4nELhqWwEkUzdLH"
 
 export type TelemetryEvent =
 	| "app:session_start"
-	| "project:project_load"
+	| "project:project_view"
 	| "message:message_create"
 	| "message:message_extract"
 	| "message:code_action_resolve"
@@ -106,6 +111,14 @@ export function initTelemetry(args: { extensionMode: vscode.ExtensionMode; versi
 		{ ignoreBuiltInCommonProperties: true, ignoreUnhandledErrors: true }
 	)
 	return logger
+}
+
+/**
+ * Whether usage events are sent right now: telemetry runs (production install) and the user's
+ * telemetry level is "all". For callers that would do work, like queries, only to build an event.
+ */
+export function isUsageEnabled() {
+	return logger?.isUsageEnabled === true
 }
 
 /**

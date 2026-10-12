@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import * as fs from "node:fs/promises"
 import { state } from "../state.js"
 import { CONFIGURATION } from "../../configuration.js"
-import { capture } from "../../services/telemetry/index.js"
+import { captureProjectView } from "./projectViewTelemetry.js"
 import {
 	createProjectViewNodes,
 	getTreeItem,
@@ -102,8 +102,8 @@ vi.mock("../../configuration.js", () => ({
 	},
 }))
 
-vi.mock("../../services/telemetry/index.js", () => ({
-	capture: vi.fn(),
+vi.mock("./projectViewTelemetry.js", () => ({
+	captureProjectView: vi.fn(async () => undefined),
 }))
 
 vi.mock("@lix-js/client", () => ({
@@ -211,6 +211,8 @@ describe("handleTreeSelection", () => {
 
 	beforeEach(() => {
 		replaceProject.mockReset().mockResolvedValue({ status: "committed" })
+		vi.mocked(captureProjectView).mockClear()
+		vi.mocked(vscode.window.showErrorMessage).mockClear()
 	})
 
 	it("should replace the session when the user selects a project", async () => {
@@ -228,33 +230,63 @@ describe("handleTreeSelection", () => {
 			},
 		} as vscode.WorkspaceFolder
 
-		const errors: Error[] = []
-
-		const mockProject = {
-			errors: {
-				get: vi.fn().mockReturnValue(errors),
-			},
-		}
-
 		vi.mocked(state).mockReturnValue({
 			projectsInWorkspace: [],
 			selectedProjectPath: selectedNode.path,
-			project: mockProject,
+			project: {},
 		} as any)
 
 		await handleTreeSelection({ selectedNode, fs, workspaceFolder })
 
 		expect(getProjectRuntime().replaceProject).toHaveBeenCalledWith(selectedNode.path)
-		expect(capture).toBeCalledWith(
-			expect.objectContaining({
-				event: "project:project_load",
-				properties: expect.objectContaining({
-					// a count, never the errors (they can contain paths)
-					error_count: errors.length,
-				}),
-			})
-		)
+		// once per load, with what it needs to look up the recommendation
+		expect(captureProjectView).toHaveBeenCalledOnce()
+		expect(captureProjectView).toHaveBeenCalledWith({ fs, workspaceFolder })
 	})
+
+	it("does not wait for the project view telemetry", async () => {
+		const selectedNode: ProjectViewNode = {
+			label: "SelectedProject",
+			path: "/path/to/selected",
+			relativePath: "./path/to/selected",
+			isSelected: true,
+			collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+			context: mockContext,
+		}
+		const workspaceFolder = {
+			uri: { fsPath: "/path/to/workspace" },
+		} as vscode.WorkspaceFolder
+		vi.mocked(captureProjectView).mockReturnValueOnce(new Promise(() => undefined))
+
+		await handleTreeSelection({ selectedNode, fs, workspaceFolder })
+
+		expect(captureProjectView).toHaveBeenCalledOnce()
+		expect(vscode.window.showErrorMessage).not.toHaveBeenCalled()
+	})
+
+	it.each(["superseded", "failed"] as const)(
+		"does not report a project view when the replacement is %s",
+		async (status) => {
+			const selectedNode: ProjectViewNode = {
+				label: "SelectedProject",
+				path: "/path/to/selected",
+				relativePath: "./path/to/selected",
+				isSelected: true,
+				collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+				context: mockContext,
+			}
+			const workspaceFolder = {
+				uri: { fsPath: "/path/to/workspace" },
+			} as vscode.WorkspaceFolder
+			replaceProject.mockResolvedValueOnce(
+				status === "failed" ? { status, error: new Error("nope") } : { status }
+			)
+
+			await handleTreeSelection({ selectedNode, fs, workspaceFolder })
+
+			expect(captureProjectView).not.toHaveBeenCalled()
+		}
+	)
 
 	it("should show error message if project loading fails", async () => {
 		const selectedNode: ProjectViewNode = {

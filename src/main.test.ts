@@ -7,6 +7,7 @@ import { handleError } from "./utilities/utils.js"
 import { gettingStartedView } from "./utilities/getting-started/gettingStarted.js"
 import { closestInlangProject } from "./utilities/project/closestInlangProject.js"
 import { projectView } from "./utilities/project/project.js"
+import { captureProjectView } from "./utilities/project/projectViewTelemetry.js"
 import { messageView } from "./utilities/messages/messages.js"
 import { errorView } from "./utilities/errors/errors.js"
 import { recommendationBannerView } from "./utilities/recommendation/recommendation.js"
@@ -99,6 +100,10 @@ vi.mock("./utilities/utils.js", () => ({
 
 vi.mock("./utilities/project/project.js", () => ({
 	projectView: vi.fn(),
+}))
+
+vi.mock("./utilities/project/projectViewTelemetry.js", () => ({
+	captureProjectView: vi.fn(async () => undefined),
 }))
 
 vi.mock("./decorations/messagePreview.js", () => ({
@@ -274,6 +279,56 @@ describe("discoverProjectsInWorkspace", () => {
 		expect(environment.runtime.dispose).toHaveBeenCalledTimes(1)
 	})
 
+	it("reports the initial project once, when it finished loading", async () => {
+		const context = {
+			subscriptions: [],
+			extensionUri: { fsPath: "/extension" },
+		} as unknown as vscode.ExtensionContext
+		vi.mocked(fg.async).mockResolvedValueOnce(["/workspace/project.inlang"])
+		vi.mocked(closestInlangProject).mockResolvedValueOnce({
+			projectPath: "/workspace/project.inlang",
+		} as any)
+
+		await activate(context)
+
+		expect(captureProjectView).toHaveBeenCalledOnce()
+		expect(captureProjectView).toHaveBeenCalledWith({
+			fs: environment.mappedFs,
+			workspaceFolder,
+		})
+		// the replacement committed before the project was reported
+		expect(environment.runtime.replaceProject.mock.invocationCallOrder[0]!).toBeLessThan(
+			vi.mocked(captureProjectView).mock.invocationCallOrder[0]!
+		)
+	})
+
+	it("does not wait for the project view telemetry during activation", async () => {
+		const context = { subscriptions: [] } as unknown as vscode.ExtensionContext
+		vi.mocked(fg.async).mockResolvedValueOnce(["/workspace/project.inlang"])
+		vi.mocked(closestInlangProject).mockResolvedValueOnce({
+			projectPath: "/workspace/project.inlang",
+		} as any)
+		vi.mocked(captureProjectView).mockReturnValueOnce(new Promise(() => undefined))
+
+		await expect(activate(context)).resolves.toBeUndefined()
+
+		expect(captureProjectView).toHaveBeenCalledOnce()
+		expect(handleError).not.toHaveBeenCalled()
+	})
+
+	it("does not report an initial project that was superseded", async () => {
+		const context = { subscriptions: [] } as unknown as vscode.ExtensionContext
+		vi.mocked(fg.async).mockResolvedValueOnce(["/workspace/project.inlang"])
+		vi.mocked(closestInlangProject).mockResolvedValueOnce({
+			projectPath: "/workspace/project.inlang",
+		} as any)
+		environment.runtime.replaceProject.mockResolvedValueOnce({ status: "superseded" })
+
+		await activate(context)
+
+		expect(captureProjectView).not.toHaveBeenCalled()
+	})
+
 	it("keeps global views and the runtime available after the initial project load fails", async () => {
 		const loadError = new Error("plugin failed to load")
 		const context = { subscriptions: [] } as unknown as vscode.ExtensionContext
@@ -289,6 +344,8 @@ describe("discoverProjectsInWorkspace", () => {
 		await activate(context)
 
 		expect(handleError).toHaveBeenCalledWith(loadError)
+		// nothing finished loading: no project to report
+		expect(captureProjectView).not.toHaveBeenCalled()
 		expect(projectView).toHaveBeenCalledTimes(1)
 		expect(errorView).toHaveBeenCalledTimes(1)
 		expect(getProjectRuntime().lastRequestedProjectPath()).toBe("/workspace/project.inlang")
