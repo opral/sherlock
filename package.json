@@ -10,7 +10,7 @@
 		"url": "https://github.com/opral/sherlock.git"
 	},
 	"icon": "assets/sherlock-logo.png",
-	"version": "2.5.0",
+	"version": "2.5.1",
 	"engines": {
 		"vscode": "^1.100.0"
 	},
