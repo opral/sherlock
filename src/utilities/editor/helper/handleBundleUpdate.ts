@@ -1,9 +1,17 @@
-import type { BundleRow, InlangDatabaseSchema, MessageRow, Pattern, VariantRow } from "@inlang/sdk"
+import type {
+	BundleRow,
+	InlangDatabaseSchema,
+	InlangProject,
+	MessageRow,
+	Pattern,
+	VariantRow,
+} from "@inlang/sdk"
 import type { ChangeEventDetail } from "@inlang/editor-component"
 import { msg } from "../../messages/msg.js"
 import type { UpdateBundleMessage } from "../editorView.js"
 import type { Kysely } from "kysely"
 import { inTransaction } from "./inTransaction.js"
+import { mutateBundle } from "./mutateBundle.js"
 
 type Db = Kysely<InlangDatabaseSchema>
 
@@ -128,18 +136,115 @@ function variableNames(pattern: Pattern): string[] {
  */
 export async function handleUpdateBundle({
 	db,
+	project,
 	message,
 }: {
-	db: Db
+	db?: Db
+	project?: InlangProject
 	message: UpdateBundleMessage
 }) {
 	const { change } = message
 	try {
+		if (project) {
+			const bundleId = await findBundleId(project.db, change)
+			if (!bundleId) return false
+			return await applyEditorChanges({
+				project,
+				bundleId,
+				changes: [change],
+			})
+		}
+		if (!db) throw new Error("No project or database provided")
 		await applyChanges(db, [change])
+		return true
 	} catch (e) {
 		console.error(`Couldn't update ${change.entity}: ${e}`)
 		msg(`Couldn't update ${change.entity}. ${String(e)}`, "error")
+		return false
 	}
+}
+
+async function findBundleId(db: Db, change: ChangeEventDetail): Promise<string | undefined> {
+	if (change.entity === "bundle") return change.entityId
+	if (change.entity === "message") {
+		const row = await db
+			.selectFrom("inlang_message")
+			.select("bundle_id")
+			.where("id", "=", change.entityId)
+			.executeTakeFirst()
+		return row?.bundle_id ?? (change.newData as MessageRow | undefined)?.bundle_id
+	}
+	const row = await db
+		.selectFrom("inlang_variant")
+		.innerJoin("inlang_message", "inlang_message.id", "inlang_variant.message_id")
+		.select("inlang_message.bundle_id")
+		.where("inlang_variant.id", "=", change.entityId)
+		.executeTakeFirst()
+	if (row) return row.bundle_id
+	const messageId = (change.newData as VariantRow | undefined)?.message_id
+	if (!messageId) return undefined
+	return (
+		await db
+			.selectFrom("inlang_message")
+			.select("bundle_id")
+			.where("id", "=", messageId)
+			.executeTakeFirst()
+	)?.bundle_id
+}
+
+/** Serialize one editor batch and apply its native AST without a resource-format round trip. */
+export async function applyEditorChanges(args: {
+	project: InlangProject
+	bundleId: string
+	changes: readonly ChangeEventDetail[]
+	patternEdits?: readonly string[]
+}): Promise<boolean> {
+	if (!args.changes.length) return false
+	return mutateBundle(args.project, args.bundleId, async (current) => {
+		if (!current) return false
+		const patternEdits = new Set(args.patternEdits)
+		const messageIds = new Set(current.messages.map((message) => message.id))
+		const variants = new Map(
+			current.messages
+				.flatMap((message) => message.variants)
+				.map((variant) => [variant.id, variant])
+		)
+		const prepared: ChangeEventDetail[] = []
+		for (const change of args.changes) {
+			if (!change.entityId || !change.entity) throw new Error("No entity or entityId provided")
+			if (change.entity === "bundle") {
+				if (change.entityId !== args.bundleId) throw new Error("The edit belongs to another bundle")
+				// A field carries derived declarations from its old snapshot. Keep current selectors'
+				// declarations; applyChanges adds inputs required by the new pattern atomically.
+				if (change.newData && patternEdits.size) continue
+			} else if (change.entity === "message") {
+				if (change.newData) {
+					if ((change.newData as MessageRow).bundle_id !== args.bundleId)
+						throw new Error("The message belongs to another bundle")
+					messageIds.add(change.entityId)
+				} else if (!messageIds.has(change.entityId)) continue
+			} else if (change.entity === "variant") {
+				const previous = variants.get(change.entityId)
+				if (change.newData) {
+					const row = change.newData as VariantRow
+					if (!messageIds.has(row.message_id))
+						throw new Error("The variant's message does not exist in this bundle")
+					if (patternEdits.has(change.entityId)) {
+						if (!previous && current.messages.some((message) => message.id === row.message_id))
+							return false
+						if (previous) {
+							prepared.push({ ...change, newData: { ...previous, pattern: row.pattern } })
+							continue
+						}
+					}
+				} else if (!previous) continue
+			} else throw new Error(`Unknown entity ${String(change.entity)}`)
+			prepared.push(change)
+		}
+		if (!prepared.length) return false
+		await applyChanges(args.project.db, prepared)
+		return true
+	})
 }
 
 async function deleteEntity(db: Db, entity: ChangeEventDetail["entity"], id: string) {

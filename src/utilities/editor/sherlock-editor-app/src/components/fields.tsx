@@ -44,20 +44,28 @@ export function PatternField({
 		// a new element has no text yet (React's StrictMode mounts twice in development)
 		given.current = undefined
 		const element = new InlangPatternEditor()
-		element.addEventListener("change", (event) => {
+		const change = (event: Event) => {
 			event.stopPropagation()
 			const detail = (event as CustomEvent<ChangeEventDetail>).detail
 			const edited = detail.newData as EditorVariant | undefined
 			if (!edited) return
-			given.current = JSON.stringify(edited.pattern)
-			callbacks.current.onChange(detail.entityId, edited.pattern)
-		})
-		element.addEventListener("pattern-editor-blur", () => callbacks.current.onBlur())
+			// Native change events carry the complete AST, including literal and token metadata.
+			const pattern = edited.pattern
+			const serialized = JSON.stringify(pattern)
+			if (serialized === given.current) return
+			given.current = serialized
+			callbacks.current.onChange(detail.entityId, pattern)
+		}
+		const blur = () => callbacks.current.onBlur()
+		element.addEventListener("change", change)
+		element.addEventListener("pattern-editor-blur", blur)
 		host.current!.append(element)
 		editor.current = element
 		fields.set(variant.id, element)
 		return () => {
 			if (fields.get(variant.id) === element) fields.delete(variant.id)
+			element.removeEventListener("change", change)
+			element.removeEventListener("pattern-editor-blur", blur)
 			element.remove()
 		}
 		// one element per variant: the parent keys the field by variant id

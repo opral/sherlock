@@ -6,13 +6,13 @@ import { isQuoted, stripQuotes } from "../utilities/messages/isQuoted.js"
 import { getSetting } from "../utilities/settings/index.js"
 import {
 	humanId,
-	upsertBundleNested,
 	type IdeExtensionConfig,
 	type InlangProject,
-	type NewBundleNested,
+	type BundleNested,
 } from "@inlang/sdk"
 import { v7 as uuidv7 } from "uuid"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
+import { createBundle } from "../utilities/editor/helper/createBundle.js"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 
 /**
@@ -129,7 +129,7 @@ export const extractMessageCommand = {
 		}
 
 		const messageId = uuidv7()
-		const bundle: NewBundleNested = {
+		const bundle: BundleNested = {
 			id: bundleId,
 			declarations: [],
 			messages: [
@@ -140,6 +140,7 @@ export const extractMessageCommand = {
 					selectors: [],
 					variants: [
 						{
+							id: uuidv7(),
 							message_id: messageId,
 							matches: [],
 							pattern: [
@@ -156,7 +157,7 @@ export const extractMessageCommand = {
 
 		try {
 			const extracted = await lease.runTask(async () => {
-				await upsertBundleNested(lease.project.db, bundle)
+				await createBundle(lease.project, bundle)
 
 				await textEditor.edit((editor) => {
 					editor.replace(textEditor.selection, preparedExtractOption)

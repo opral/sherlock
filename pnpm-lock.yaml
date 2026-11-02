@@ -12,17 +12,17 @@ importers:
         specifier: 3.46.0-build2
         version: 3.46.0-build2
       '@inlang/editor-component':
-        specifier: 13.0.0
-        version: 13.0.0(@inlang/sdk@4.0.0)(@types/react@19.2.7)
+        specifier: 14.0.1
+        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@inlang/recommend-sherlock':
         specifier: 0.2.1
         version: 0.2.1
       '@inlang/sdk':
-        specifier: 4.0.0
-        version: 4.0.0
+        specifier: 4.1.1
+        version: 4.1.1
       '@inlang/settings-component':
         specifier: 5.0.0
-        version: 5.0.0(@inlang/sdk@4.0.0)(@types/react@19.2.7)
+        version: 5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.27)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
@@ -67,17 +67,17 @@ importers:
         specifier: ^2.29.8
         version: 2.29.8(@types/node@20.19.27)
       '@inlang/plugin-i18next':
-        specifier: 6.2.6
-        version: 6.2.6
+        specifier: 6.5.1
+        version: 6.5.1
       '@inlang/plugin-json':
-        specifier: 5.1.57
-        version: 5.1.57
+        specifier: 5.1.65
+        version: 5.1.65
       '@inlang/plugin-m-function-matcher':
         specifier: 2.3.0
         version: 2.3.0(@typescript-eslint/types@8.51.0)
       '@inlang/plugin-message-format':
-        specifier: 4.5.0
-        version: 4.5.0
+        specifier: 4.5.7
+        version: 4.5.7
       '@inlang/plugin-t-function-matcher':
         specifier: 2.0.27
         version: 2.0.27
@@ -144,6 +144,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.3
+      jsdom:
+        specifier: 27.4.0
+        version: 27.4.0
       mocha:
         specifier: ^10.2.0
         version: 10.8.2
@@ -166,11 +169,11 @@ importers:
   src/utilities/editor/sherlock-editor-app:
     dependencies:
       '@inlang/editor-component':
-        specifier: 13.0.0
-        version: 13.0.0(@inlang/sdk@4.0.0)(@types/react@19.2.7)
+        specifier: 14.0.1
+        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@inlang/sdk':
-        specifier: 4.0.0
-        version: 4.0.0
+        specifier: 4.1.1
+        version: 4.1.1
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -1114,56 +1117,25 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@inlang/detect-json-formatting@1.0.0':
-    resolution: {integrity: sha512-o0jeI8U4TgNlsPwI0y92jld8/18Loh2KEgHCYCJ42rCOdxFrA8R60cydlEd2/6jkdHFn5DxKj8rOyiKv3z9uOw==}
-    deprecated: no longer used
-
-  '@inlang/editor-component@13.0.0':
-    resolution: {integrity: sha512-6D5LRByGv/z5bzoxsdCDgWGLnIbw0WsQjy85Mm0xlTOtMbPiPTXliu6pIrQKmqVAODLU1cgbxE0Od1DCVbNnwQ==}
+  '@inlang/editor-component@14.0.1':
+    resolution: {integrity: sha512-hizd9A9KbK2jr0nQC5sQCVNKrk5FzxrUhu9J0UuaFK7jzRTzX38Qm+ZFbTAbziiEOD8YZjXykOwyoROym1u8Xw==}
     peerDependencies:
-      '@inlang/sdk': ^4.0.0
+      '@inlang/sdk': ^4.1.1
 
-  '@inlang/json-types@1.1.0':
-    resolution: {integrity: sha512-n6vS6AqETsCFbV4TdBvR/EH57waVXzKsMqeUQ+eH2Q6NUATfKhfLabgNms2A+QV3aedH/hLtb1pRmjl2ykBVZg==}
-    deprecated: no longer used
-    peerDependencies:
-      '@sinclair/typebox': ^0.31.0
+  '@inlang/plugin-i18next@6.5.1':
+    resolution: {integrity: sha512-5kKfSKrGWeBY+LmDVHedbtFBogfrR8Czxwdipvz3krZLWIZ+EOQNjGMKsJssnlJ6rTRv3qEjnEhHnOBA0tWGDA==}
 
-  '@inlang/language-tag@1.5.1':
-    resolution: {integrity: sha512-+NlYDxDvN5h/TKUmkuQv+Ct1flxaVRousCbek7oFEk3/afZPVLNTJhm+cX2xiOg3tmi2KKrBLfy/V9oUDHj6GQ==}
-    deprecated: use the inlang sdk directly https://www.npmjs.com/package/@inlang/sdk
-
-  '@inlang/message@2.1.0':
-    resolution: {integrity: sha512-Gr3wiErI7fW4iW11xgZzsJEUTjlZuz02fB/EO+ENTBlSHGyI1kzbCCeNqLr1mnGdQYiOxfuZxY0S4G5C6Pju3Q==}
-    deprecated: use the inlang sdk directly https://www.npmjs.com/package/@inlang/sdk
-    peerDependencies:
-      '@sinclair/typebox': ^0.31.17
-
-  '@inlang/plugin-i18next@6.2.6':
-    resolution: {integrity: sha512-AaySn4ucTaoPkAwRuoYtPrL9+LKU8vac29gb59j0exwBzWryr7f5J5oMXQW/1m5MHIIjpQEHQZl322+0IanHPQ==}
-
-  '@inlang/plugin-json@5.1.57':
-    resolution: {integrity: sha512-tRNkZ/k0k4P1q0wYzrb67mrLAXf0JCKp/6gmP90wIZybHgBz7vrleru1V6722GGYc0RzUm8wGEH3s1cOHYoBHg==}
+  '@inlang/plugin-json@5.1.65':
+    resolution: {integrity: sha512-An80y4wsBjQKm4T3aqGDYm4LceHMFmtF+NVtCCUHBZpETDhkX2V8LsTrXEPjyy16BvXWtC8uApchE42OCsz3uw==}
 
   '@inlang/plugin-m-function-matcher@2.3.0':
     resolution: {integrity: sha512-C1wBvCl+xwrfBS18OO6+JEYZDeI2pnLg/yed6C/TSGOU+K4chsV8kEkUuy42L335yX8Oe/yK7SMyVwJRYBWbWQ==}
 
-  '@inlang/plugin-message-format@4.5.0':
-    resolution: {integrity: sha512-sUiIAxNjFBciVun5bVJMZZ0fN6jU9RRaul3ThmE7kyXUtOeOE5GwrBdVCipRn/gxgMhZlCh88oO8RJbXegn+pA==}
+  '@inlang/plugin-message-format@4.5.7':
+    resolution: {integrity: sha512-rjRd0ityaVOIvmm1VLGLwnbwZbEHwS6EOyUPdiMhwYZ0JJmIMoLG+BxozHnwMB9QH+R1lqpLYbCZmlTDBtG4zg==}
 
   '@inlang/plugin-t-function-matcher@2.0.27':
     resolution: {integrity: sha512-YNtwhdhbJLYp8o3GxNez2V8mCsp/Kswnmf9je9v78durQextELdQYmeETB1L1oq7yOb/KF4nwZ36vZgzOnRDmQ==}
-
-  '@inlang/plugin@2.4.14':
-    resolution: {integrity: sha512-HFI1t1tKs6jXqwKVl59vvt7kvMgg2Po7xA3IFijfJTZCt0tTI8txqeXCUV9jhUop29Hqj6a5zQd32BYv33Dulw==}
-    deprecated: use the inlang sdk directly https://www.npmjs.com/package/@inlang/sdk
-    peerDependencies:
-      '@sinclair/typebox': ^0.31.17
-
-  '@inlang/project-settings@2.4.2':
-    resolution: {integrity: sha512-Okus2JdwTzNebZHkXCrUH/zIWwqu7kWm/ZQaM6a31oRIEA2JdQJtyNGM8E/KrwGfEuq18U+WV03+tR3tkwsGvA==}
-    peerDependencies:
-      '@sinclair/typebox': ^0.31.17
 
   '@inlang/recommend-sherlock@0.2.1':
     resolution: {integrity: sha512-ckv8HvHy/iTqaVAEKrr+gnl+p3XFNwe5D2+6w6wJk2ORV2XkcRkKOJ/XsTUJbPSiyi4PI+p+T3bqbmNx/rDUlg==}
@@ -1176,14 +1148,14 @@ packages:
     resolution: {integrity: sha512-AwGasJATSKq9J3EVBdmIbpU++2DTI8z0J5WbejT6lqymLaoDB4cf95Zp0ijmJp7XUNP/z10qQfA2lz0TAojRYA==}
     engines: {node: '>=20.0.0'}
 
+  '@inlang/sdk@4.1.1':
+    resolution: {integrity: sha512-eeRnaW6mZPctXd8mwnATWEQgSg0J+EneUsBX2pJEl/7YRfosApCoc5aR4bHKwizLDd0CB3rtfuqteYirG5VSsg==}
+    engines: {node: '>=20.0.0'}
+
   '@inlang/settings-component@5.0.0':
     resolution: {integrity: sha512-Kr0FrUFIhoHNU07HiEQk3z7gSBv1XLUrmKVagX7EcRb0nUov5BTXbcCl4GJQuErN9JAcKasUJwsK9Rr3RZJoWg==}
     peerDependencies:
       '@inlang/sdk': '*'
-
-  '@inlang/translatable@1.3.1':
-    resolution: {integrity: sha512-VAtle21vRpIrB+axtHFrFB0d1HtDaaNj+lV77eZQTJyOWbTFYTVIQJ8WAbyw9eu4F6h6QC2FutLyxjMomxfpcQ==}
-    deprecated: no longer used
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -1282,10 +1254,6 @@ packages:
   '@lit/task@1.0.3':
     resolution: {integrity: sha512-1gJGJl8WON+2j0y9xfcD+XsS1rvcy3XDgsIhcdUW++yTR8ESjZW6o7dn8M8a4SZM8NnJe6ynS2cKWwsbfLOurg==}
 
-  '@lix-js/fs@2.2.0':
-    resolution: {integrity: sha512-B9X3FjD8WmdG7tbA44JuniSO0KdKBWnjfxl8zpgrDCkavrp/GP7U0xxBkc0WgeeoHjQ/pkqq9VqtWB2kS9jIUg==}
-    deprecated: use the lix sdk instead https://www.npmjs.com/package/@lix-js/sdk
-
   '@lix-js/sdk-darwin-arm64@0.12.3':
     resolution: {integrity: sha512-YeMJyYGk+QwvQe8O4AAcBMgfNm68IjAGDvuvZHr1U1rIb3GC2kYFStajqf4mT4BGc+cN65/P/2kkqEo+Igu/sA==}
     cpu: [arm64]
@@ -1311,6 +1279,9 @@ packages:
 
   '@lix-js/sdk@0.19.0':
     resolution: {integrity: sha512-ks7hKZdJGH0APlSLWtFYCXDO3yIoleoPqzLgkZYtMbaiWRN2Ih772tNGGBZFLKbutq6DuNRwcjNkG94KqWRbBA==}
+
+  '@lix-js/sdk@0.20.1':
+    resolution: {integrity: sha512-oscOFP8Cr1My6Wh2KVYC9+aJ1mHs+d7vnD+7PPJaA4L+Y1FR37Sm99SrFGfvUizaj/XtRi2GlDF2IOFt9iXMNQ==}
 
   '@ljharb/through@2.3.14':
     resolution: {integrity: sha512-ajBvlKpWucBB17FuQYUShqpqy8GRgYEpJW0vWJbUu1CV9lWyrDCapy0lScU8T8Z6qn49sSwJB3+M+evYIdGg+A==}
@@ -3435,10 +3406,6 @@ packages:
   grapheme-splitter@1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
 
-  guess-json-indent@2.0.0:
-    resolution: {integrity: sha512-3Tm6R43KhtZWEVSHZnFmYMV9+gf3Vu0HXNNYtPVk2s7o8eGwYlJPHrjLtYw/7HBc10YxV+bfzKMuOf24z5qFng==}
-    engines: {node: '>=16.17.0'}
-
   has-flag@3.0.0:
     resolution: {integrity: sha512-sKJf1+ceQBr4SMkvQnBDNDtf4TXpVhVGateu0t918bl30FnbE2m4vNLX+VWe/dpjlb+HugGYzW7uQXH98HPEYw==}
     engines: {node: '>=4'}
@@ -5300,11 +5267,6 @@ packages:
       eslint: ^8.57.0 || ^9.0.0
       typescript: '>=4.8.4 <6.0.0'
 
-  typescript@5.2.2:
-    resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
   typescript@5.3.2:
     resolution: {integrity: sha512-6l+RyNy7oAHDfxC4FzSJcz9vnjTKxrLpDG5M2Vu4SHRVNg6xzqZp6LYSR9zjqQTu8DU/f5xwxUdADOkbrIX2gQ==}
     engines: {node: '>=14.17'}
@@ -5735,8 +5697,7 @@ packages:
 
 snapshots:
 
-  '@acemir/cssom@0.9.31':
-    optional: true
+  '@acemir/cssom@0.9.31': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
@@ -5750,7 +5711,6 @@ snapshots:
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
       lru-cache: 11.5.2
-    optional: true
 
   '@asamuzakjp/dom-selector@6.8.1':
     dependencies:
@@ -5759,10 +5719,8 @@ snapshots:
       css-tree: 3.2.1
       is-potential-custom-element-name: 1.0.1
       lru-cache: 11.5.2
-    optional: true
 
-  '@asamuzakjp/nwsapi@2.3.9':
-    optional: true
+  '@asamuzakjp/nwsapi@2.3.9': {}
 
   '@azu/format-text@1.0.2': {}
 
@@ -6193,14 +6151,12 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@csstools/color-helpers@6.1.1':
-    optional: true
+  '@csstools/color-helpers@6.1.1': {}
 
   '@csstools/css-calc@3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
     dependencies:
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
-    optional: true
 
   '@csstools/css-color-parser@4.2.2(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
     dependencies:
@@ -6208,20 +6164,16 @@ snapshots:
       '@csstools/css-calc': 3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
-    optional: true
 
   '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0)':
     dependencies:
       '@csstools/css-tokenizer': 4.0.0
-    optional: true
 
   '@csstools/css-syntax-patches-for-csstree@1.1.12(css-tree@3.2.1)':
     optionalDependencies:
       css-tree: 3.2.1
-    optional: true
 
-  '@csstools/css-tokenizer@4.0.0':
-    optional: true
+  '@csstools/css-tokenizer@4.0.0': {}
 
   '@ctrl/tinycolor@4.2.0': {}
 
@@ -6505,8 +6457,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@exodus/bytes@1.15.1':
-    optional: true
+  '@exodus/bytes@1.15.1': {}
 
   '@fastify/accept-negotiator@1.1.0': {}
 
@@ -6572,13 +6523,9 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inlang/detect-json-formatting@1.0.0':
+  '@inlang/editor-component@14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
     dependencies:
-      guess-json-indent: 2.0.0
-
-  '@inlang/editor-component@13.0.0(@inlang/sdk@4.0.0)(@types/react@19.2.7)':
-    dependencies:
-      '@inlang/sdk': 4.0.0
+      '@inlang/sdk': 4.1.1
       '@lexical/plain-text': 0.16.1
       '@lexical/utils': 0.16.1
       '@lit/task': 1.0.3
@@ -6591,29 +6538,15 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@inlang/json-types@1.1.0(@sinclair/typebox@0.31.28)':
+  '@inlang/plugin-i18next@6.5.1':
     dependencies:
+      '@babel/parser': 7.29.8
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.28
 
-  '@inlang/language-tag@1.5.1':
+  '@inlang/plugin-json@5.1.65':
     dependencies:
-      '@sinclair/typebox': 0.31.28
-
-  '@inlang/message@2.1.0(@sinclair/typebox@0.31.28)':
-    dependencies:
-      '@inlang/language-tag': 1.5.1
-      '@sinclair/typebox': 0.31.28
-
-  '@inlang/plugin-i18next@6.2.6':
-    dependencies:
-      '@inlang/sdk': 3.0.2
-      '@sinclair/typebox': 0.31.28
-
-  '@inlang/plugin-json@5.1.57':
-    dependencies:
-      '@inlang/detect-json-formatting': 1.0.0
-      '@inlang/plugin': 2.4.14(@sinclair/typebox@0.31.28)
-      '@lix-js/fs': 2.2.0
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.28
 
   '@inlang/plugin-m-function-matcher@2.3.0(@typescript-eslint/types@8.51.0)':
@@ -6624,30 +6557,14 @@ snapshots:
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@inlang/plugin-message-format@4.5.0':
+  '@inlang/plugin-message-format@4.5.7':
     dependencies:
-      '@inlang/sdk': 4.0.0
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.30
 
   '@inlang/plugin-t-function-matcher@2.0.27':
     dependencies:
       '@inlang/sdk': 3.0.2
-
-  '@inlang/plugin@2.4.14(@sinclair/typebox@0.31.28)':
-    dependencies:
-      '@inlang/json-types': 1.1.0(@sinclair/typebox@0.31.28)
-      '@inlang/language-tag': 1.5.1
-      '@inlang/message': 2.1.0(@sinclair/typebox@0.31.28)
-      '@inlang/project-settings': 2.4.2(@sinclair/typebox@0.31.28)
-      '@inlang/translatable': 1.3.1
-      '@lix-js/fs': 2.2.0
-      '@sinclair/typebox': 0.31.28
-
-  '@inlang/project-settings@2.4.2(@sinclair/typebox@0.31.28)':
-    dependencies:
-      '@inlang/json-types': 1.1.0(@sinclair/typebox@0.31.28)
-      '@inlang/language-tag': 1.5.1
-      '@sinclair/typebox': 0.31.28
 
   '@inlang/recommend-sherlock@0.2.1':
     dependencies:
@@ -6656,7 +6573,7 @@ snapshots:
   '@inlang/sdk@3.0.2':
     dependencies:
       '@lix-js/sdk': 0.12.3
-      '@sinclair/typebox': 0.31.28
+      '@sinclair/typebox': 0.31.30
       kysely: 0.28.17
       sqlite-wasm-kysely: 0.3.0(kysely@0.28.17)
       uuid: 14.0.0
@@ -6668,9 +6585,16 @@ snapshots:
       kysely: 0.28.17
       uuid: 14.0.2
 
-  '@inlang/settings-component@5.0.0(@inlang/sdk@4.0.0)(@types/react@19.2.7)':
+  '@inlang/sdk@4.1.1':
     dependencies:
-      '@inlang/sdk': 4.0.0
+      '@lix-js/sdk': 0.20.1
+      '@sinclair/typebox': 0.31.30
+      kysely: 0.28.17
+      uuid: 14.0.2
+
+  '@inlang/settings-component@5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
+    dependencies:
+      '@inlang/sdk': 4.1.1
       '@lit/task': 1.0.3
       '@shoelace-style/shoelace': 2.14.0(@types/react@19.2.7)
       '@sinclair/typebox': 0.31.28
@@ -6678,10 +6602,6 @@ snapshots:
       lit: 3.3.2
     transitivePeerDependencies:
       - '@types/react'
-
-  '@inlang/translatable@1.3.1':
-    dependencies:
-      '@inlang/language-tag': 1.5.1
 
   '@inquirer/external-editor@1.0.3(@types/node@20.19.27)':
     dependencies:
@@ -6812,10 +6732,6 @@ snapshots:
     dependencies:
       '@lit/reactive-element': 2.1.2
 
-  '@lix-js/fs@2.2.0':
-    dependencies:
-      typescript: 5.2.2
-
   '@lix-js/sdk-darwin-arm64@0.12.3':
     optional: true
 
@@ -6838,6 +6754,12 @@ snapshots:
       '@lix-js/sdk-win32-x64': 0.12.3
 
   '@lix-js/sdk@0.19.0':
+    dependencies:
+      '@bytecodealliance/jco-transpile': 0.13.0
+      binaryen: 130.0.0
+      fflate: 0.8.3
+
+  '@lix-js/sdk@0.20.1':
     dependencies:
       '@bytecodealliance/jco-transpile': 0.13.0
       binaryen: 130.0.0
@@ -8104,7 +8026,6 @@ snapshots:
   bidi-js@1.1.0:
     dependencies:
       require-from-string: 2.0.2
-    optional: true
 
   big-integer@1.6.52: {}
 
@@ -8446,7 +8367,6 @@ snapshots:
     dependencies:
       mdn-data: 2.27.1
       source-map-js: 1.2.1
-    optional: true
 
   css-value@0.0.1: {}
 
@@ -8458,7 +8378,6 @@ snapshots:
       '@csstools/css-syntax-patches-for-csstree': 1.1.12(css-tree@3.2.1)
       css-tree: 3.2.1
       lru-cache: 11.5.2
-    optional: true
 
   csstype@3.2.3: {}
 
@@ -8470,7 +8389,6 @@ snapshots:
     dependencies:
       whatwg-mimetype: 5.0.0
       whatwg-url: 15.1.0
-    optional: true
 
   debug@4.3.1:
     dependencies:
@@ -8492,8 +8410,7 @@ snapshots:
 
   decamelize@6.0.1: {}
 
-  decimal.js@10.6.0:
-    optional: true
+  decimal.js@10.6.0: {}
 
   decompress-response@6.0.0:
     dependencies:
@@ -8657,8 +8574,7 @@ snapshots:
 
   entities@6.0.1: {}
 
-  entities@8.1.0:
-    optional: true
+  entities@8.1.0: {}
 
   environment@1.1.0: {}
 
@@ -9353,8 +9269,6 @@ snapshots:
 
   grapheme-splitter@1.0.4: {}
 
-  guess-json-indent@2.0.0: {}
-
   has-flag@3.0.0: {}
 
   has-flag@4.0.0: {}
@@ -9390,7 +9304,6 @@ snapshots:
       '@exodus/bytes': 1.15.1
     transitivePeerDependencies:
       - '@noble/hashes'
-    optional: true
 
   html-escaper@2.0.2: {}
 
@@ -9557,8 +9470,7 @@ snapshots:
 
   is-plain-obj@4.1.0: {}
 
-  is-potential-custom-element-name@1.0.1:
-    optional: true
+  is-potential-custom-element-name@1.0.1: {}
 
   is-reference@3.0.3:
     dependencies:
@@ -9725,7 +9637,6 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
-    optional: true
 
   jsesc@3.1.0: {}
 
@@ -9989,8 +9900,7 @@ snapshots:
 
   lru-cache@11.2.4: {}
 
-  lru-cache@11.5.2:
-    optional: true
+  lru-cache@11.5.2: {}
 
   lru-cache@5.1.1:
     dependencies:
@@ -10037,8 +9947,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mdn-data@2.27.1:
-    optional: true
+  mdn-data@2.27.1: {}
 
   mdurl@1.0.1: {}
 
@@ -10408,7 +10317,6 @@ snapshots:
   parse5@8.0.1:
     dependencies:
       entities: 8.1.0
-    optional: true
 
   path-exists@4.0.0: {}
 
@@ -10786,7 +10694,6 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
-    optional: true
 
   scheduler@0.27.0: {}
 
@@ -11089,8 +10996,7 @@ snapshots:
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  symbol-tree@3.2.4:
-    optional: true
+  symbol-tree@3.2.4: {}
 
   table@6.9.0:
     dependencies:
@@ -11212,13 +11118,11 @@ snapshots:
 
   tinyspy@4.0.4: {}
 
-  tldts-core@7.4.12:
-    optional: true
+  tldts-core@7.4.12: {}
 
   tldts@7.4.12:
     dependencies:
       tldts-core: 7.4.12
-    optional: true
 
   tmp-promise@3.0.3:
     dependencies:
@@ -11247,14 +11151,12 @@ snapshots:
   tough-cookie@6.0.2:
     dependencies:
       tldts: 7.4.12
-    optional: true
 
   tr46@0.0.3: {}
 
   tr46@6.0.0:
     dependencies:
       punycode: 2.3.1
-    optional: true
 
   traverse@0.3.9: {}
 
@@ -11319,8 +11221,6 @@ snapshots:
       typescript: 5.7.3
     transitivePeerDependencies:
       - supports-color
-
-  typescript@5.2.2: {}
 
   typescript@5.3.2: {}
 
@@ -11492,7 +11392,6 @@ snapshots:
   w3c-xmlserializer@5.0.0:
     dependencies:
       xml-name-validator: 5.0.0
-    optional: true
 
   wait-port@1.1.0:
     dependencies:
@@ -11596,8 +11495,7 @@ snapshots:
 
   webidl-conversions@3.0.1: {}
 
-  webidl-conversions@8.0.1:
-    optional: true
+  webidl-conversions@8.0.1: {}
 
   whatwg-encoding@3.1.1:
     dependencies:
@@ -11605,14 +11503,12 @@ snapshots:
 
   whatwg-mimetype@4.0.0: {}
 
-  whatwg-mimetype@5.0.0:
-    optional: true
+  whatwg-mimetype@5.0.0: {}
 
   whatwg-url@15.1.0:
     dependencies:
       tr46: 6.0.0
       webidl-conversions: 8.0.1
-    optional: true
 
   whatwg-url@5.0.0:
     dependencies:
@@ -11660,15 +11556,13 @@ snapshots:
 
   ws@8.18.3: {}
 
-  ws@8.21.3:
-    optional: true
+  ws@8.21.3: {}
 
   wsl-utils@0.1.0:
     dependencies:
       is-wsl: 3.1.0
 
-  xml-name-validator@5.0.0:
-    optional: true
+  xml-name-validator@5.0.0: {}
 
   xml2js@0.5.0:
     dependencies:
@@ -11677,8 +11571,7 @@ snapshots:
 
   xmlbuilder@11.0.1: {}
 
-  xmlchars@2.2.0:
-    optional: true
+  xmlchars@2.2.0: {}
 
   y18n@5.0.8: {}
 

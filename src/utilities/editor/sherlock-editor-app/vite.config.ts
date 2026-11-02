@@ -8,6 +8,9 @@ export default defineConfig({
 	resolve: {
 		// the webview never opens a project: keep the Lix engine out of the bundle
 		alias: [
+			// Some component exports import schema values from the package root.
+			// Use the browser entry so those imports cannot pull in directory APIs.
+			{ find: /^@inlang\/sdk$/, replacement: "@inlang/sdk/browser" },
 			{
 				find: /^@lix-js\/sdk$/,
 				replacement: fileURLToPath(new URL("./src/lib/lixStub.ts", import.meta.url)),

@@ -27,7 +27,7 @@ export const msg = (
 		statusBarItem.show()
 
 		setTimeout(() => {
-			statusBarItem.hide()
+			statusBarItem.dispose()
 		}, duration)
 	}
 

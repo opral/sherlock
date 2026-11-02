@@ -1,12 +1,13 @@
 import { msg } from "../utilities/messages/msg.js"
 import { commands, window } from "vscode"
 import { capture } from "../services/telemetry/index.js"
-import { humanId, upsertBundleNested, type InlangProject, type NewBundleNested } from "@inlang/sdk"
+import { humanId, type InlangProject, type BundleNested } from "@inlang/sdk"
 import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { v7 as uuidv7 } from "uuid"
-import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
+import { createBundle } from "../utilities/editor/helper/createBundle.js"
+import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 
 /**
  * Helps the user to create messages by prompting for the message content.
@@ -48,7 +49,7 @@ export const createMessageCommand = {
 		}
 
 		const messageId = uuidv7()
-		const bundle: NewBundleNested = {
+		const bundle: BundleNested = {
 			id: bundleId,
 			declarations: [],
 			messages: [
@@ -59,6 +60,7 @@ export const createMessageCommand = {
 					selectors: [],
 					variants: [
 						{
+							id: uuidv7(),
 							message_id: messageId,
 							matches: [],
 							pattern: [
@@ -75,7 +77,7 @@ export const createMessageCommand = {
 
 		try {
 			const created = await lease.runTask(async () => {
-				await upsertBundleNested(lease.project.db, bundle)
+				await createBundle(lease.project, bundle)
 				await saveProjectResources(lease.project, lease.path)
 				return true
 			})

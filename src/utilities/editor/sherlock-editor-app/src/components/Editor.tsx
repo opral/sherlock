@@ -117,13 +117,18 @@ export default function Editor({
 	}, [bundle, locales, baseLocale])
 
 	/** Shows `next`, and sends the rows that differ from the editor's copy to the extension. */
-	const commit = (next: BundleNested, options: { persist: boolean }) => {
+	const commit = (next: BundleNested, options: { persist: boolean; patternEdit?: string }) => {
 		const changes = diffBundles(current.current, next)
 		if (changes.length === 0) return
 		current.current = next
 		setBundle(next)
 		setError(undefined)
-		vscode.postMessage({ command: "apply-changes", changes, persist: options.persist })
+		vscode.postMessage({
+			command: "apply-changes",
+			changes,
+			persist: options.persist,
+			...(options.patternEdit !== undefined ? { patternEdits: [options.patternEdit] } : {}),
+		})
 	}
 
 	/** The bundle with `message` (a draft or a stored message) replaced by `update(message)`. */
@@ -148,7 +153,7 @@ export default function Editor({
 		}))
 		commit(
 			{ ...next, declarations: updateDeclarations(next, pattern, declaredHere.current) },
-			{ persist: false }
+			{ persist: false, patternEdit: variantId }
 		)
 	}
 
