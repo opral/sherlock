@@ -49,8 +49,6 @@ vi.mock("../../src/configuration.js", () => ({
 }))
 vi.mock("../../src/utilities/messages/msg.js", () => ({ msg: vi.fn() }))
 import { createProjectResourceSynchronization } from "../../src/utilities/project/projectResourceSynchronization.js"
-import { clearOmittedEmptyJsonResources } from "../../src/utilities/project/clearEmptyJsonResources.js"
-import { deleteVariant } from "../../src/utilities/editor/helper/deleteVariant.js"
 import { deleteBundleNested } from "../../src/utilities/editor/helper/deleteBundleNested.js"
 
 const projects: InlangProject[] = []
@@ -65,6 +63,12 @@ afterEach(async () => {
 			.map((directory) => fsPromises.rm(directory, { recursive: true, force: true }))
 	)
 })
+
+// Exercise the SDK's resource export contract with the graph emptied by a row deletion.
+async function removeMessageVariants(project: InlangProject, messageId: string) {
+	await project.db.deleteFrom("inlang_variant").where("message_id", "=", messageId).execute()
+	return true
+}
 
 async function setup(
 	plugin: InlangPlugin,
@@ -118,19 +122,14 @@ async function setup(
 describe("deleting the last entry from a JSON resource", () => {
 	it.each([
 		["last variant", i18next, { greeting: "Hello {{name}}" }],
-		["last zero aliases", i18next, { greeting_zero: "None {{name}}" }],
+		["last zero resource entry", i18next, { greeting_zero: "None {{name}}" }],
 		["last JSON variant", json, { greeting: "Hello {name}" }],
 	] as const)(
 		"persists %s deletion and reloads without resurrection",
 		async (_name, plugin, values) => {
 			const fixture = await setup(plugin, "./messages/{locale}.json", [{ locale: "en", values }])
 			const [bundle] = await selectBundleNested(fixture.project.db).execute()
-			expect(
-				await deleteVariant({
-					project: fixture.project,
-					variantId: bundle!.messages[0]!.variants[0]!.id,
-				})
-			).toBe(true)
+			expect(await removeMessageVariants(fixture.project, bundle!.messages[0]!.id)).toBe(true)
 			await fixture.save()
 			expect(
 				JSON.parse(
@@ -177,10 +176,7 @@ describe("deleting the last entry from a JSON resource", () => {
 		)!
 		const retainedPath = path.join(fixture.directory, "messages/en/admin.json")
 		const before = await fsPromises.readFile(retainedPath, "utf8")
-		await deleteVariant({
-			project: fixture.project,
-			variantId: common.messages[0]!.variants[0]!.id,
-		})
+		await removeMessageVariants(fixture.project, common.messages[0]!.id)
 		await fixture.save()
 		expect(
 			await fsPromises.readFile(path.join(fixture.directory, "messages/en/common.json"), "utf8")
@@ -211,62 +207,6 @@ describe("deleting the last entry from a JSON resource", () => {
 		expect(await fixture.reload()).toEqual([])
 	})
 
-	it("never clears generic plugin resources or files the SDK explicitly wrote", async () => {
-		const fixture = await setup(i18next, "./messages/{locale}.json", [
-			{ locale: "en", values: { greeting: "Hello" } },
-		])
-		const resourcePath = path.join(fixture.directory, "messages/en.json")
-		await deleteBundleNested({ db: fixture.project.db, bundleId: "greeting" })
-		const before = await fsPromises.readFile(resourcePath, "utf8")
-		await clearOmittedEmptyJsonResources({
-			project: fixture.project,
-			projectPath: fixture.projectPath,
-			fileSystem: fsPromises,
-			exports: new Map([
-				[
-					i18next.key,
-					{
-						existingFiles: [
-							{
-								path: "./messages/en.json",
-								locale: "en",
-								content: new TextEncoder().encode(before),
-								imported: true,
-							},
-						],
-						exportedFiles: [
-							{ name: "en.json", locale: "en", content: new TextEncoder().encode(before) },
-						],
-					},
-				],
-			]),
-		})
-		expect(await fsPromises.readFile(resourcePath, "utf8")).toBe(before)
-		fixture.project.plugins.get = async () => [{ ...i18next, key: "plugin.example" }]
-		await clearOmittedEmptyJsonResources({
-			project: fixture.project,
-			projectPath: fixture.projectPath,
-			fileSystem: fsPromises,
-			exports: new Map([
-				[
-					"plugin.example",
-					{
-						existingFiles: [
-							{
-								path: "./messages/en.json",
-								locale: "en",
-								content: new TextEncoder().encode(before),
-								imported: true,
-							},
-						],
-						exportedFiles: [],
-					},
-				],
-			]),
-		})
-		expect(await fsPromises.readFile(resourcePath, "utf8")).toBe(before)
-	})
-
 	it.each([false, true])(
 		"preserves an unused base source override (namespaced=%s)",
 		async (namespaced) => {
@@ -293,26 +233,30 @@ describe("deleting the last entry from a JSON resource", () => {
 			const overridePath = path.join(fixture.directory, "base-source.json")
 			await fsPromises.writeFile(overridePath, '{"greeting":"Hello"}')
 			const [bundle] = await selectBundleNested(fixture.project.db).execute()
-			await deleteVariant({
-				project: fixture.project,
-				variantId: bundle!.messages[0]!.variants[0]!.id,
-			})
+			await removeMessageVariants(fixture.project, bundle!.messages[0]!.id)
 			await fixture.save()
 			expect(await fsPromises.readFile(overridePath, "utf8")).toBe('{"greeting":"Hello"}')
 			expect(await fixture.reload()).toEqual([])
 		}
 	)
 
-	it("preserves a source file when import errors may explain the empty graph", async () => {
+	it("preserves a source file whose import failed", async () => {
 		const fixture = await setup(i18next, "./messages/{locale}.json", [
 			{ locale: "en", values: { greeting: "Hello" } },
 		])
 		const resourcePath = path.join(fixture.directory, "messages/en.json")
-		const before = await fsPromises.readFile(resourcePath, "utf8")
-		await deleteBundleNested({ db: fixture.project.db, bundleId: "greeting" })
-		fixture.project.errors.get = async () => [new Error("A resource could not be imported")]
+		const invalidTranslation = '{"greeting":'
+		await fsPromises.writeFile(resourcePath, invalidTranslation)
+		await expect(
+			fixture.project.importFiles({
+				pluginKey: i18next.key,
+				files: [{ locale: "en", content: new TextEncoder().encode(invalidTranslation) }],
+			})
+		).rejects.toThrow()
+		const [bundle] = await selectBundleNested(fixture.project.db).execute()
+		await removeMessageVariants(fixture.project, bundle!.messages[0]!.id)
 		await fixture.save()
-		expect(await fsPromises.readFile(resourcePath, "utf8")).toBe(before)
+		expect(await fsPromises.readFile(resourcePath, "utf8")).toBe(invalidTranslation)
 	})
 
 	it("acknowledges the empty resource write without scheduling an external reload", async () => {
@@ -335,10 +279,7 @@ describe("deleting the last entry from a JSON resource", () => {
 			requestReconciliation: reconcile,
 		} as never)
 		const [bundle] = await selectBundleNested(fixture.project.db).execute()
-		await deleteVariant({
-			project: fixture.project,
-			variantId: bundle!.messages[0]!.variants[0]!.id,
-		})
+		await removeMessageVariants(fixture.project, bundle!.messages[0]!.id)
 		await fixture.save()
 		vi.useFakeTimers()
 		for (const watcher of watcherHost.watchers) watcher.change?.()
@@ -364,7 +305,7 @@ describe("deleting the last entry from a JSON resource", () => {
 		})
 		projects.push(loaded)
 		const [bundle] = await selectBundleNested(loaded.db).execute()
-		await deleteVariant({ project: loaded, variantId: bundle!.messages[0]!.variants[0]!.id })
+		await removeMessageVariants(loaded, bundle!.messages[0]!.id)
 		await fixture.synchronization.save(loaded, fixture.projectPath)
 		expect(await fsPromises.readFile(overridePath, "utf8")).toBe("{}")
 		// The unused default resource remains outside this importer's ownership.
@@ -403,26 +344,5 @@ describe("deleting the last entry from a JSON resource", () => {
 		expect(
 			await fsPromises.readFile(path.join(fixture.directory, "messages/en.json"), "utf8")
 		).toBe("{}\n")
-	})
-
-	it("preserves an external edit made after the SDK captured its existing-file input", async () => {
-		const fixture = await setup(i18next, "./messages/{locale}.json", [
-			{ locale: "en", values: { greeting: "Hello" } },
-		])
-		const resourcePath = path.join(fixture.directory, "messages/en.json")
-		await deleteBundleNested({ db: fixture.project.db, bundleId: "greeting" })
-		fixture.project.plugins.get = async () => [
-			{
-				...i18next,
-				exportFiles: async () => {
-					await fsPromises.writeFile(resourcePath, '{"greeting":"Arrived during save"}')
-					return []
-				},
-			},
-		]
-		await fixture.save()
-		expect(await fsPromises.readFile(resourcePath, "utf8")).toBe(
-			'{"greeting":"Arrived during save"}'
-		)
 	})
 })

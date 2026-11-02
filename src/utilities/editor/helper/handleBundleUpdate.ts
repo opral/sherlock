@@ -1,5 +1,4 @@
 import type {
-	BundleNested,
 	BundleRow,
 	InlangDatabaseSchema,
 	InlangProject,
@@ -13,11 +12,6 @@ import type { UpdateBundleMessage } from "../editorView.js"
 import type { Kysely } from "kysely"
 import { inTransaction } from "./inTransaction.js"
 import { mutateBundle } from "./mutateBundle.js"
-import { normalizeBundle, storageAliases } from "./normalizeBundle.js"
-import { writeBundle } from "./writeBundle.js"
-import { deleteBundleNested } from "./deleteBundleNested.js"
-import { textToPattern } from "../../messages/pattern.js"
-import { isEqual } from "lodash-es"
 
 type Db = Kysely<InlangDatabaseSchema>
 
@@ -154,14 +148,10 @@ export async function handleUpdateBundle({
 		if (project) {
 			const bundleId = await findBundleId(project.db, change)
 			if (!bundleId) return false
-			return await applyResourceChanges({
+			return await applyEditorChanges({
 				project,
 				bundleId,
 				changes: [change],
-				patternTexts:
-					message.patternText === undefined
-						? undefined
-						: { [change.entityId]: message.patternText },
 			})
 		}
 		if (!db) throw new Error("No project or database provided")
@@ -202,143 +192,57 @@ async function findBundleId(db: Db, change: ChangeEventDetail): Promise<string |
 	)?.bundle_id
 }
 
-/** Apply one editor batch to the latest graph, then parse and write the complete resource context. */
-export async function applyResourceChanges(args: {
+/** Serialize one editor batch and apply its native AST without a resource-format round trip. */
+export async function applyEditorChanges(args: {
 	project: InlangProject
 	bundleId: string
 	changes: readonly ChangeEventDetail[]
-	patternTexts?: Record<string, string>
 	patternEdits?: readonly string[]
 }): Promise<boolean> {
 	if (!args.changes.length) return false
 	return mutateBundle(args.project, args.bundleId, async (current) => {
 		if (!current) return false
-		let draft: BundleNested | undefined = structuredClone(current)
-		const removedAliases = new Set<string>()
-		const edited: Array<{ id: string; aliases: Set<string> }> = []
-		let canonicalize = false
+		const patternEdits = new Set(args.patternEdits)
+		const messageIds = new Set(current.messages.map((message) => message.id))
+		const variants = new Map(
+			current.messages
+				.flatMap((message) => message.variants)
+				.map((variant) => [variant.id, variant])
+		)
+		const prepared: ChangeEventDetail[] = []
 		for (const change of args.changes) {
 			if (!change.entityId || !change.entity) throw new Error("No entity or entityId provided")
-			if (!draft) throw new Error("Cannot edit a deleted bundle")
 			if (change.entity === "bundle") {
 				if (change.entityId !== args.bundleId) throw new Error("The edit belongs to another bundle")
-				if (!change.newData) draft = undefined
-				// Text edits carry optimistic, derived declarations from the panel's old snapshot.
-				// Keep current selector declarations; the resource parser derives inputs for new text.
-				else if (!args.patternEdits?.length && !Object.keys(args.patternTexts ?? {}).length)
-					draft.declarations = structuredClone((change.newData as BundleRow).declarations)
+				// A field carries derived declarations from its old snapshot. Keep current selectors'
+				// declarations; applyChanges adds inputs required by the new pattern atomically.
+				if (change.newData && patternEdits.size) continue
 			} else if (change.entity === "message") {
-				const index = draft.messages.findIndex((entry) => entry.id === change.entityId)
-				if (!change.newData) {
-					if (index >= 0) draft.messages.splice(index, 1)
-					canonicalize = true
-					continue
-				}
-				const row = change.newData as MessageRow
-				if (row.bundle_id !== args.bundleId)
-					throw new Error("The message belongs to another bundle")
-				const message = {
-					id: change.entityId,
-					bundle_id: row.bundle_id,
-					locale: row.locale,
-					selectors: structuredClone(row.selectors),
-					variants: index >= 0 ? draft.messages[index]!.variants : [],
-				}
-				if (index >= 0) draft.messages[index] = message
-				else draft.messages.push(message)
+				if (change.newData) {
+					if ((change.newData as MessageRow).bundle_id !== args.bundleId)
+						throw new Error("The message belongs to another bundle")
+					messageIds.add(change.entityId)
+				} else if (!messageIds.has(change.entityId)) continue
 			} else if (change.entity === "variant") {
-				const previous = current.messages
-					.flatMap((message) => message.variants)
-					.find((variant) => variant.id === change.entityId)
-				if (!change.newData) {
-					canonicalize = true
-					const aliases = await storageAliases(args.project, current, change.entityId)
-					for (const id of aliases) removedAliases.add(id)
-					for (const message of draft.messages)
-						message.variants = message.variants.filter((variant) => !aliases.has(variant.id))
-					continue
-				}
-				const row = change.newData as VariantRow
-				const source = args.patternTexts?.[change.entityId]
-				const patternOnly = source !== undefined || args.patternEdits?.includes(change.entityId)
-				const messageId = patternOnly && previous ? previous.message_id : row.message_id
-				const message = draft.messages.find((entry) => entry.id === messageId)
-				if (!message) throw new Error("The variant's message does not exist in this bundle")
-				// A stale text edit must not recreate a variant removed while the field was open.
-				if (
-					patternOnly &&
-					!previous &&
-					current.messages.some((entry) => entry.id === row.message_id)
-				)
-					return false
-				const pattern =
-					source === undefined ? row.pattern : textToPattern(source, previous?.pattern)
-				if (!previous || !isEqual(previous.pattern, pattern)) canonicalize = true
-				const variant = {
-					id: change.entityId,
-					message_id: messageId,
-					matches: structuredClone(patternOnly && previous ? previous.matches : row.matches),
-					pattern: structuredClone(pattern),
-				}
-				const index = message.variants.findIndex((entry) => entry.id === change.entityId)
-				if (index >= 0) message.variants[index] = variant
-				else message.variants.push(variant)
-				if (previous && !isEqual(previous.pattern, pattern))
-					edited.push({
-						id: variant.id,
-						aliases: await storageAliases(args.project, current, variant.id),
-					})
+				const previous = variants.get(change.entityId)
+				if (change.newData) {
+					const row = change.newData as VariantRow
+					if (!messageIds.has(row.message_id))
+						throw new Error("The variant's message does not exist in this bundle")
+					if (patternEdits.has(change.entityId)) {
+						if (!previous && current.messages.some((message) => message.id === row.message_id))
+							return false
+						if (previous) {
+							prepared.push({ ...change, newData: { ...previous, pattern: row.pattern } })
+							continue
+						}
+					}
+				} else if (!previous) continue
 			} else throw new Error(`Unknown entity ${String(change.entity)}`)
+			prepared.push(change)
 		}
-		if (!draft) {
-			await deleteBundleNested({ db: args.project.db, bundleId: args.bundleId })
-			return true
-		}
-		for (const message of draft.messages)
-			message.variants = message.variants.filter((variant) => !removedAliases.has(variant.id))
-		const variants = draft.messages.flatMap((message) => message.variants)
-		const aliasPatterns = new Map<string, Pattern>()
-		for (const edit of edited) {
-			const selected = variants.find((variant) => variant.id === edit.id)
-			if (selected)
-				for (const id of edit.aliases) {
-					const earlier = aliasPatterns.get(id)
-					if (earlier && !isEqual(earlier, selected.pattern))
-						throw new Error(
-							`Conflicting edits target the same resource entry in translation "${args.bundleId}".`
-						)
-					aliasPatterns.set(id, structuredClone(selected.pattern))
-				}
-		}
-		for (const variant of variants) {
-			const pattern = aliasPatterns.get(variant.id)
-			if (pattern) variant.pattern = pattern
-		}
-		// An empty graph has no resource representation to import again.
-		let canonical: BundleNested
-		try {
-			canonical = !canonicalize
-				? draft
-				: variants.length
-					? await normalizeBundle(args.project, draft)
-					: { ...draft, declarations: [], messages: [] }
-		} catch (cause) {
-			const changedVariants = args.changes
-				.filter((change) => change.entity === "variant" && change.newData)
-				.map((change) => change.entityId)
-			const context = draft.messages
-				.flatMap((message) =>
-					message.variants
-						.filter((variant) => changedVariants.includes(variant.id))
-						.map((variant) => `${message.locale}, variant ${variant.id}`)
-				)
-				.join("; ")
-			throw new Error(
-				`Could not parse translation "${args.bundleId}"${context ? ` (${context})` : ""}: ${String(cause)}`,
-				{ cause }
-			)
-		}
-		await writeBundle(args.project.db, canonical)
+		if (!prepared.length) return false
+		await applyChanges(args.project.db, prepared)
 		return true
 	})
 }

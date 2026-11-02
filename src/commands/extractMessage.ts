@@ -12,7 +12,7 @@ import {
 } from "@inlang/sdk"
 import { v7 as uuidv7 } from "uuid"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
-import { createResourceBundle } from "../utilities/editor/helper/createResourceBundle.js"
+import { createBundle } from "../utilities/editor/helper/createBundle.js"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 
 /**
@@ -157,7 +157,7 @@ export const extractMessageCommand = {
 
 		try {
 			const extracted = await lease.runTask(async () => {
-				await createResourceBundle(lease.project, bundle)
+				await createBundle(lease.project, bundle)
 
 				await textEditor.edit((editor) => {
 					editor.replace(textEditor.selection, preparedExtractOption)

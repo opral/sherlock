@@ -8,7 +8,7 @@ import { msg } from "../messages/msg.js"
 import type { ChangeEventDetail } from "@inlang/editor-component"
 import { deleteVariant } from "./helper/deleteVariant.js"
 import { deleteBundleNested } from "./helper/deleteBundleNested.js"
-import { applyResourceChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { applyEditorChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
 import { showCloudPanel } from "../cloud/cloudView.js"
 import { createMessage } from "./helper/createMessage.js"
 import { saveProject } from "../../main.js"
@@ -23,7 +23,6 @@ export interface UpdateBundleMessage {
 	command: string
 	change: ChangeEventDetail
 	persist?: boolean
-	patternText?: string
 }
 
 /**
@@ -187,11 +186,10 @@ export function editorView(args: {
 						try {
 							if (!Array.isArray(message.changes)) throw new Error("No editor changes provided")
 							const changed = await queueMutation(() =>
-								applyResourceChanges({
+								applyEditorChanges({
 									project: lease.project,
 									bundleId: targetBundleId,
 									changes: message.changes,
-									patternTexts: message.patternTexts,
 									patternEdits: message.patternEdits,
 								})
 							)

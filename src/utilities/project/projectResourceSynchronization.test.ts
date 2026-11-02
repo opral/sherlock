@@ -87,8 +87,6 @@ vi.mock("node:fs", () => ({
 
 vi.mock("node:fs/promises", () => ({ default: host.nodeFileSystem }))
 
-vi.mock("./clearEmptyJsonResources.js", () => ({ clearOmittedEmptyJsonResources: vi.fn() }))
-
 vi.mock("@inlang/sdk", () => ({
 	loadProjectFromDirectory: host.loadProjectFromDirectory,
 	saveProjectToDirectory: host.saveProjectToDirectory,
@@ -155,10 +153,7 @@ describe("project resource synchronization", () => {
 		await synchronization.save(project as any, projectPath)
 
 		expect(host.saveProjectToDirectory).toHaveBeenCalledWith(
-			expect.objectContaining({
-				project: expect.objectContaining({ settings: project.settings }),
-				path: projectPath,
-			})
+			expect.objectContaining({ project, path: projectPath })
 		)
 	})
 

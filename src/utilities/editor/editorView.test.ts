@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import { editorView } from "./editorView.js"
 import { saveProject } from "../../main.js"
 import { saveProjectResources } from "../project/projectResourceSynchronization.js"
-import { applyResourceChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
+import { applyEditorChanges, handleUpdateBundle } from "./helper/handleBundleUpdate.js"
 import { createMessage } from "./helper/createMessage.js"
 import { selectBundleById } from "../project/selectBundleById.js"
 import { msg } from "../messages/msg.js"
@@ -56,7 +56,7 @@ vi.mock("./helper/getUri.js", () => ({ getUri: vi.fn() }))
 vi.mock("./helper/getNonce.js", () => ({ getNonce: vi.fn(() => "nonce") }))
 vi.mock("./helper/handleBundleUpdate.js", () => ({
 	handleUpdateBundle: vi.fn(async () => true),
-	applyResourceChanges: vi.fn(async () => true),
+	applyEditorChanges: vi.fn(async () => true),
 }))
 vi.mock("../cloud/cloudView.js", () => ({ showCloudPanel: vi.fn() }))
 vi.mock("./helper/deleteVariant.js", () => ({ deleteVariant: vi.fn(async () => undefined) }))
@@ -534,7 +534,7 @@ describe("editorView", () => {
 		const changes = [{ entity: "variant", entityId: "edited", newData: { id: "edited" } }]
 		const patternEdits = ["edited"]
 		await mocks.receiveMessage?.({ command: "apply-changes", changes, patternEdits, persist: true })
-		expect(applyResourceChanges).toHaveBeenCalledExactlyOnceWith({
+		expect(applyEditorChanges).toHaveBeenCalledExactlyOnceWith({
 			project,
 			bundleId: "welcome",
 			changes,
@@ -549,7 +549,7 @@ describe("editorView", () => {
 		await mocks.receiveMessage?.({ command: "ready" })
 		const panel = vi.mocked(vscode.window.createWebviewPanel).mock.results.at(-1)!.value
 		panel.webview.postMessage.mockClear()
-		vi.mocked(applyResourceChanges).mockRejectedValueOnce(new Error("Invalid markup"))
+		vi.mocked(applyEditorChanges).mockRejectedValueOnce(new Error("Invalid markup"))
 		const change = {
 			command: "apply-changes",
 			changes: [{ entity: "variant", entityId: "edited" }],

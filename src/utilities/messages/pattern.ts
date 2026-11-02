@@ -1,25 +1,4 @@
-import type { Pattern, VariantRow } from "@inlang/sdk"
-
-export function unsupportedPatternTypes(pattern: Pattern): string[] {
-	const unsupported = new Set<string>()
-	for (const element of pattern) {
-		switch (element.type) {
-			case "text":
-			case "markup-start":
-			case "markup-end":
-			case "markup-standalone":
-				break
-			case "expression":
-				if (element.arg.type !== "variable-reference" && element.arg.type !== "literal") {
-					unsupported.add(`expression ${(element.arg as { type: string }).type}`)
-				}
-				break
-			default:
-				unsupported.add((element as { type: string }).type)
-		}
-	}
-	return [...unsupported]
-}
+import type { Pattern } from "@inlang/sdk"
 
 function valueToText(
 	value: { type: "literal"; value: string } | { type: "variable-reference"; name: string }
@@ -307,10 +286,4 @@ export function textToPattern(text: string, previousPattern: Pattern = []): Patt
 	}
 	flush()
 	return pattern
-}
-
-/** The upstream editor only understands text and simple expressions. Project this view only. */
-export function editableVariant(variant: VariantRow): VariantRow {
-	const text = patternToEditorText(variant.pattern)
-	return { ...variant, pattern: text ? [{ type: "text", value: text }] : [] }
 }

@@ -48,7 +48,7 @@ vi.mock("./projectRuntime.js", () => ({
 const { createProjectResourceSynchronization } = await import("./projectResourceSynchronization.js")
 const { selectBundleById } = await import("./selectBundleById.js")
 const { getProjectSize } = await import("./projectSize.js")
-const { handleUpdateBundle, applyChanges, applyResourceChanges } =
+const { handleUpdateBundle, applyChanges, applyEditorChanges } =
 	await import("../editor/helper/handleBundleUpdate.js")
 const { diffBundles } = await import("../editor/sherlock-editor-app/src/lib/diffBundles.js")
 const { createMessage } = await import("../editor/helper/createMessage.js")
@@ -378,7 +378,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 			{ ...before, declarations: [{ type: "input-variable", name: "count" }] },
 			{ variable: "count", kind: "plural", locale: "en" }
 		)
-		await applyResourceChanges({
+		await applyEditorChanges({
 			project,
 			bundleId: before.id,
 			changes: diffBundles(before, plural),
@@ -398,7 +398,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 		const before = (await selectBundleById(project, "café"))!
 		const messageId = "01890000-0000-7000-8000-000000000101"
 		const variantId = "01890000-0000-7000-8000-000000000102"
-		await applyResourceChanges({
+		await applyEditorChanges({
 			project,
 			bundleId: before.id,
 			changes: [
@@ -417,11 +417,12 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 						pattern: [
 							{ type: "text", value: "Café " },
 							{ type: "expression", arg: { type: "variable-reference", name: "name" } },
+							{ type: "text", value: "\n" },
 						],
 					},
 				},
 			],
-			patternTexts: { [variantId]: "Café {name}\n" },
+			patternEdits: [variantId],
 		})
 		const stored = (await selectBundleById(project, before.id))!
 		expect(
@@ -437,7 +438,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 		const before = (await selectBundleById(project, "zebra"))!
 		const variant = before.messages.find((message) => message.locale === "de")!.variants[0]!
 		await expect(
-			applyResourceChanges({
+			applyEditorChanges({
 				project,
 				bundleId: before.id,
 				changes: [
@@ -570,7 +571,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 			},
 			{ variable: "count", kind: "plural", locale: "en" }
 		)
-		await applyResourceChanges({
+		await applyEditorChanges({
 			project,
 			bundleId: before.id,
 			changes: diffBundles(before, plural),
@@ -580,7 +581,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 		const latestVariant = latestMessage.variants.find((variant) => variant.id === staleVariant.id)!
 		expect(latestVariant.matches).not.toEqual(staleVariant.matches)
 
-		await applyResourceChanges({
+		await applyEditorChanges({
 			project,
 			bundleId: before.id,
 			changes: [

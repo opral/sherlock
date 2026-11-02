@@ -1,13 +1,11 @@
 import { msg } from "../utilities/messages/msg.js"
 import { commands, window } from "vscode"
-import { getPatternFromString } from "../utilities/messages/query.js"
 import { CONFIGURATION } from "../configuration.js"
 import { type BundleRow, type InlangProject } from "@inlang/sdk"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
-import { normalizeVariantChange } from "../utilities/editor/helper/normalizeVariantEdit.js"
-import { patternToEditorText } from "../utilities/messages/pattern.js"
-import { writeBundle } from "../utilities/editor/helper/writeBundle.js"
+import { patternToEditorText, textToPattern } from "../utilities/messages/pattern.js"
+import { applyChanges } from "../utilities/editor/helper/handleBundleUpdate.js"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
 import { mutateBundle } from "../utilities/editor/helper/mutateBundle.js"
 
@@ -35,7 +33,7 @@ export const editMessageCommand = {
 		const variant = message?.variants.find((v) => v.matches.length === 0)
 
 		if (!variant) {
-			return msg(`VariantRow with locale ${locale} not found.`)
+			return msg(`Variant with locale ${locale} not found.`)
 		}
 
 		// Construct the complete pattern text
@@ -59,17 +57,16 @@ export const editMessageCommand = {
 						throw new Error(
 							`Translation "${bundleId}" (${locale}) changed while the input was open.`
 						)
-					const canonical = await normalizeVariantChange({
-						project: lease.project,
-						bundle: current,
-						variant: currentVariant,
-						pattern: getPatternFromString({
-							string: newValue,
-							previousPattern: currentVariant.pattern,
-						}),
-						editorText: newValue,
-					})
-					await writeBundle(lease.project.db, canonical)
+					await applyChanges(lease.project.db, [
+						{
+							entity: "variant",
+							entityId: currentVariant.id,
+							newData: {
+								...currentVariant,
+								pattern: textToPattern(newValue, currentVariant.pattern),
+							},
+						},
+					])
 					await saveProjectResources(lease.project, lease.path)
 					return true
 				})

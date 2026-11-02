@@ -18,10 +18,6 @@ vi.mock("../utilities/editor/helper/mutateBundle.js", () => ({
 	mutateBundle: vi.fn(async (_project, _bundleId, mutation) => mutation(undefined)),
 }))
 
-vi.mock("../utilities/editor/helper/normalizeBundle.js", () => ({
-	normalizeBundle: vi.fn(async (_project, bundle) => bundle),
-}))
-
 vi.mock("../utilities/state", () => ({
 	state: vi.fn(),
 }))

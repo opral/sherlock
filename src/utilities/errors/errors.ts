@@ -2,7 +2,6 @@ import * as vscode from "vscode"
 import { CONFIGURATION } from "../../configuration.js"
 import type { InlangProject } from "@inlang/sdk"
 import { getProjectRuntime } from "../project/projectRuntime.js"
-import { getProjectPatternErrors } from "./patternErrors.js"
 
 export interface ErrorNode {
 	label: string
@@ -39,13 +38,7 @@ export async function createErrorNodes(): Promise<ErrorNode[]> {
 		// no project
 		return [createErrorNode(undefined)]
 	}
-	const result = await lease.runTask(async () => {
-		const [loadErrors, patternErrors] = await Promise.all([
-			lease.project.errors.get(),
-			getProjectPatternErrors(lease.project, lease.path),
-		])
-		return [...loadErrors, ...patternErrors]
-	})
+	const result = await lease.runTask(() => lease.project.errors.get())
 	if (result.status !== "completed") return [createErrorNode(undefined)]
 	const errors = [...result.value]
 	if (errors.length === 0) {
@@ -90,10 +83,7 @@ export const errorView = async (args: { context: vscode.ExtensionContext }) => {
 	const errorDataProvider = createErrorTreeDataProvider()
 
 	args.context.subscriptions.push(
-		vscode.window.registerTreeDataProvider("errorView", errorDataProvider),
-		CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.event(() =>
-			CONFIGURATION.EVENTS.ON_DID_ERROR_TREE_VIEW_CHANGE.fire(undefined)
-		)
+		vscode.window.registerTreeDataProvider("errorView", errorDataProvider)
 	)
 
 	return

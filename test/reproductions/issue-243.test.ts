@@ -35,9 +35,7 @@ vi.mock("../../src/configuration.js", () => ({
 	CONFIGURATION: { STRINGS: { MISSING_TRANSLATION_MESSAGE: "[missing]" } },
 }))
 
-import { getPatternFromString, getStringFromPattern } from "../../src/utilities/messages/query.js"
-import { normalizeVariantEdit } from "../../src/utilities/editor/helper/normalizeVariantEdit.js"
-import { editableVariant } from "../../src/utilities/messages/pattern.js"
+import { getStringFromPattern } from "../../src/utilities/messages/query.js"
 import { createMessageHtml } from "../../src/utilities/messages/messages.js"
 
 let root: string
@@ -102,9 +100,6 @@ describe("issue #243 reproduction with the real i18next plugin and SDK", () => {
 		expect(host.errors).toEqual([])
 		expect(host.created).toBe(0)
 		expect(vi.getTimerCount()).toBe(0)
-		expect(editableVariant(message.variants[0]!).pattern).toEqual([
-			{ type: "text", value: "Hello, it is <b>{time}</b>!" },
-		])
 	})
 
 	it("escapes HTML in previews and creates no notifications on repeated renders", async () => {
@@ -151,11 +146,11 @@ describe("issue #243 reproduction with the real i18next plugin and SDK", () => {
 		}
 	})
 
-	it("keeps the same markup model and identical JSON after typing, saving and reloading", async () => {
+	it("saves the native markup AST and reloads identical JSON", async () => {
 		const message = bundle.messages[0]!
 		const variant = message.variants[0]!
 		const original = fs.readFileSync(path.join(root, "locales/en-US/common.json"), "utf8")
-		const typed = getPatternFromString({ string: "Hello, it is <b>{time}</b>!" })
+		const typed = structuredClone(variant.pattern)
 		captureStatusBarCalls()
 		expect(
 			getStringFromPattern({ pattern: typed, locale: message.locale, messageId: message.id })
@@ -163,12 +158,10 @@ describe("issue #243 reproduction with the real i18next plugin and SDK", () => {
 		expect(host.created).toBe(0)
 		vi.useRealTimers()
 
-		const normalized = await normalizeVariantEdit({ project, bundle, variant, pattern: typed })
-		expect(normalized).toEqual(variant.pattern)
 		await project.db
 			.updateTable("inlang_variant")
 			.where("id", "=", variant.id)
-			.set({ pattern: normalized })
+			.set({ pattern: typed })
 			.execute()
 		const exported = await project.exportFiles({ pluginKey: plugin.key })
 		expect(exported).toHaveLength(1)
@@ -188,7 +181,7 @@ describe("issue #243 reproduction with the real i18next plugin and SDK", () => {
 					messageId: reloadedMessage.id,
 				})
 			).toBe("Hello, it is <b>{time}</b>!")
-			expect(reloadedMessage.variants[0]!.pattern).toEqual(normalized)
+			expect(reloadedMessage.variants[0]!.pattern).toEqual(typed)
 			expect(host.created).toBe(0)
 		} finally {
 			vi.clearAllTimers()

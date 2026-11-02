@@ -6,7 +6,7 @@ import { CONFIGURATION } from "../configuration.js"
 import { getSetting } from "../utilities/settings/index.js"
 import { v7 as uuidv7 } from "uuid"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
-import { createResourceBundle } from "../utilities/editor/helper/createResourceBundle.js"
+import { createBundle } from "../utilities/editor/helper/createBundle.js"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 
 /**
@@ -77,7 +77,7 @@ export const createMessageCommand = {
 
 		try {
 			const created = await lease.runTask(async () => {
-				await createResourceBundle(lease.project, bundle)
+				await createBundle(lease.project, bundle)
 				await saveProjectResources(lease.project, lease.path)
 				return true
 			})

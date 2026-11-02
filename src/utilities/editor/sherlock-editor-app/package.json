@@ -10,8 +10,8 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@inlang/editor-component": "13.0.0",
-		"@inlang/sdk": "4.0.0",
+		"@inlang/editor-component": "14.0.0",
+		"@inlang/sdk": "4.1.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"uuid": "^11.0.5"

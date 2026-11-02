@@ -10,4 +10,5 @@ const unavailable = () => {
 }
 
 export const openLix = unavailable
+export const json = unavailable
 export const Value = { jsonb: unavailable }
