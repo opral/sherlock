@@ -9,6 +9,9 @@ import {
 } from "./errors.js"
 import { state } from "../state.js"
 import { CONFIGURATION } from "../../configuration.js"
+import { getProjectPatternErrors } from "./patternErrors.js"
+
+vi.mock("./patternErrors.js", () => ({ getProjectPatternErrors: vi.fn(async () => []) }))
 
 vi.mock("vscode", () => ({
 	TreeItem: vi.fn(),
@@ -23,7 +26,10 @@ vi.mock("vscode", () => ({
 	commands: {
 		registerCommand: vi.fn(),
 	},
-	EventEmitter: vi.fn(),
+	EventEmitter: class {
+		event = () => ({ dispose() {} })
+		fire() {}
+	},
 	env: {
 		clipboard: {
 			writeText: vi.fn(),
@@ -61,6 +67,7 @@ describe("error handling", () => {
 		// Clear all mocks and reset state to avoid leaks between tests
 		vi.clearAllMocks()
 		vi.resetAllMocks()
+		vi.mocked(getProjectPatternErrors).mockResolvedValue([])
 	})
 
 	it("creates an error node for an actual error", () => {
@@ -142,7 +149,7 @@ describe("error handling", () => {
 		await errorView({
 			context: mockContext as unknown as vscode.ExtensionContext,
 		})
-		expect(mockContext.subscriptions).toHaveLength(1)
+		expect(mockContext.subscriptions).toHaveLength(2)
 		expect(vscode.window.registerTreeDataProvider).toHaveBeenCalledWith(
 			"errorView",
 			expect.any(Object)

@@ -48,7 +48,8 @@ vi.mock("./projectRuntime.js", () => ({
 const { createProjectResourceSynchronization } = await import("./projectResourceSynchronization.js")
 const { selectBundleById } = await import("./selectBundleById.js")
 const { getProjectSize } = await import("./projectSize.js")
-const { handleUpdateBundle, applyChanges } = await import("../editor/helper/handleBundleUpdate.js")
+const { handleUpdateBundle, applyChanges, applyResourceChanges } =
+	await import("../editor/helper/handleBundleUpdate.js")
 const { diffBundles } = await import("../editor/sherlock-editor-app/src/lib/diffBundles.js")
 const { createMessage } = await import("../editor/helper/createMessage.js")
 const { deleteVariant } = await import("../editor/helper/deleteVariant.js")
@@ -371,6 +372,98 @@ describe("SDK 4 data integrity", () => {
 })
 
 describe("editor changes (the webview's diff of a bundle, written by applyChanges)", () => {
+	it("applies the current editor's structural plural batch without dropping declarations or forms", async () => {
+		const before = (await selectBundleById(project, "farewell"))!
+		const plural = addSelector(
+			{ ...before, declarations: [{ type: "input-variable", name: "count" }] },
+			{ variable: "count", kind: "plural", locale: "en" }
+		)
+		await applyResourceChanges({
+			project,
+			bundleId: before.id,
+			changes: diffBundles(before, plural),
+		})
+		const stored = (await selectBundleById(project, before.id))!
+		expect(stored.declarations).toEqual(plural.declarations)
+		expect(stored.messages.map((message) => message.selectors)).toEqual(
+			plural.messages.map((message) => message.selectors)
+		)
+		await save()
+		expect(JSON.parse(await read("messages/en.json")).farewell[0].match).toEqual({
+			"countPlural=*": "Bye",
+		})
+	})
+
+	it("creates a draft locale and its edited variant in one canonical batch", async () => {
+		const before = (await selectBundleById(project, "café"))!
+		const messageId = "01890000-0000-7000-8000-000000000101"
+		const variantId = "01890000-0000-7000-8000-000000000102"
+		await applyResourceChanges({
+			project,
+			bundleId: before.id,
+			changes: [
+				{
+					entity: "message",
+					entityId: messageId,
+					newData: { id: messageId, bundle_id: before.id, locale: "de", selectors: [] },
+				},
+				{
+					entity: "variant",
+					entityId: variantId,
+					newData: {
+						id: variantId,
+						message_id: messageId,
+						matches: [],
+						pattern: [
+							{ type: "text", value: "Café " },
+							{ type: "expression", arg: { type: "variable-reference", name: "name" } },
+						],
+					},
+				},
+			],
+			patternTexts: { [variantId]: "Café {name}\n" },
+		})
+		const stored = (await selectBundleById(project, before.id))!
+		expect(
+			stored.messages.find((message) => message.locale === "de")?.variants[0]?.pattern.at(-1)
+		).toEqual({ type: "text", value: "\n" })
+		expect(stored.declarations).toContainEqual({ type: "input-variable", name: "name" })
+		await save()
+		expect(JSON.parse(await read("messages/de.json"))["café"]).toBe("Café {name}\n")
+		expect(await read("messages/en.json")).toBe(EN)
+	})
+
+	it("leaves the stored bundle untouched when a later row in its canonical batch is invalid", async () => {
+		const before = (await selectBundleById(project, "zebra"))!
+		const variant = before.messages.find((message) => message.locale === "de")!.variants[0]!
+		await expect(
+			applyResourceChanges({
+				project,
+				bundleId: before.id,
+				changes: [
+					{
+						entity: "variant",
+						entityId: variant.id,
+						newData: { ...variant, pattern: [{ type: "text", value: "Changed" }] },
+					},
+					{
+						entity: "variant",
+						entityId: "01890000-0000-7000-8000-000000000103",
+						newData: {
+							id: "01890000-0000-7000-8000-000000000103",
+							message_id: "missing",
+							pattern: [],
+							matches: [],
+						},
+					},
+				],
+			})
+		).rejects.toThrow("does not exist")
+		expect(await selectBundleById(project, before.id)).toEqual(before)
+		await save()
+		expect(await read("messages/de.json")).toBe(DE)
+	})
+
 	it("makes a message plural in every language and writes the plural forms", async () => {
 		const before = (await selectBundleById(project, "farewell"))!
 		const plural = addSelector(
@@ -463,5 +556,75 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 		expect(after.messages.find((message) => message.locale === "de")!.variants[0]!.pattern).toEqual(
 			[{ type: "text", value: "Zebra" }]
 		)
+	})
+
+	it("keeps the latest selector matches when a stale panel edits only the variant text", async () => {
+		const before = (await selectBundleById(project, "farewell"))!
+		const staleVariant = structuredClone(
+			before.messages.find((message) => message.locale === "en")!.variants[0]!
+		)
+		const plural = addSelector(
+			{
+				...before,
+				declarations: [...before.declarations, { type: "input-variable", name: "count" }],
+			},
+			{ variable: "count", kind: "plural", locale: "en" }
+		)
+		await applyResourceChanges({
+			project,
+			bundleId: before.id,
+			changes: diffBundles(before, plural),
+		})
+		const latest = (await selectBundleById(project, before.id))!
+		const latestMessage = latest.messages.find((message) => message.locale === "en")!
+		const latestVariant = latestMessage.variants.find((variant) => variant.id === staleVariant.id)!
+		expect(latestVariant.matches).not.toEqual(staleVariant.matches)
+
+		await applyResourceChanges({
+			project,
+			bundleId: before.id,
+			changes: [
+				{
+					entity: "bundle",
+					entityId: before.id,
+					newData: { id: before.id, declarations: [{ type: "input-variable", name: "name" }] },
+				},
+				{
+					entity: "variant",
+					entityId: staleVariant.id,
+					newData: {
+						...staleVariant,
+						pattern: [
+							{ type: "text", value: "Later " },
+							{ type: "expression", arg: { type: "variable-reference", name: "name" } },
+						],
+					},
+				},
+			],
+			patternTexts: { [staleVariant.id]: "Later {name}" },
+		})
+		const stored = (await selectBundleById(project, before.id))!
+		const message = stored.messages.find((entry) => entry.locale === "en")!
+		expect(message.selectors).toEqual(latestMessage.selectors)
+		expect(message.variants.find((variant) => variant.id === staleVariant.id)!.matches).toEqual(
+			latestVariant.matches
+		)
+		await save()
+		expect(JSON.parse(await read("messages/en.json")).farewell).toEqual([
+			{
+				declarations: ["input count", "input name", "local countPlural = count: plural"],
+				selectors: ["countPlural"],
+				match: { "countPlural=*": "Later {name}" },
+			},
+		])
+		const reloaded = await sync.load(projectPath)
+		try {
+			const restored = (await selectBundleById(reloaded, before.id))!
+			const restoredMessage = restored.messages.find((entry) => entry.locale === "en")!
+			expect(restoredMessage.selectors).toEqual(latestMessage.selectors)
+			expect(restoredMessage.variants[0]!.matches).toEqual(latestVariant.matches)
+		} finally {
+			await reloaded.close()
+		}
 	})
 })

@@ -1,0 +1,3 @@
+{
+	"greetingTitle": "Hello, it is <b>{{time}}</b>!"
+}

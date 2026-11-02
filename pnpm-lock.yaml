@@ -144,6 +144,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.3
+      jsdom:
+        specifier: 27.4.0
+        version: 27.4.0
       mocha:
         specifier: ^10.2.0
         version: 10.8.2

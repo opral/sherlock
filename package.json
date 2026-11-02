@@ -337,6 +337,7 @@
 		"comment-json": "^4.2.3",
 		"esbuild": "^0.19.8",
 		"expect-webdriverio": "^4.6.1",
+		"jsdom": "27.4.0",
 		"fs-extra": "^11.2.0",
 		"mocha": "^10.2.0",
 		"node-fetch": "^3.3.2",

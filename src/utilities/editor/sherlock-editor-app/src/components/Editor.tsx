@@ -117,13 +117,21 @@ export default function Editor({
 	}, [bundle, locales, baseLocale])
 
 	/** Shows `next`, and sends the rows that differ from the editor's copy to the extension. */
-	const commit = (next: BundleNested, options: { persist: boolean }) => {
+	const commit = (
+		next: BundleNested,
+		options: { persist: boolean; patternTexts?: Record<string, string> }
+	) => {
 		const changes = diffBundles(current.current, next)
 		if (changes.length === 0) return
 		current.current = next
 		setBundle(next)
 		setError(undefined)
-		vscode.postMessage({ command: "apply-changes", changes, persist: options.persist })
+		vscode.postMessage({
+			command: "apply-changes",
+			changes,
+			persist: options.persist,
+			...(options.patternTexts ? { patternTexts: options.patternTexts } : {}),
+		})
 	}
 
 	/** The bundle with `message` (a draft or a stored message) replaced by `update(message)`. */
@@ -141,14 +149,19 @@ export default function Editor({
 		}
 	}
 
-	const editPattern = (message: EditorMessage, variantId: string, pattern: Pattern) => {
+	const editPattern = (
+		message: EditorMessage,
+		variantId: string,
+		pattern: Pattern,
+		source: string
+	) => {
 		const next = withMessage(message, (m) => ({
 			...m,
 			variants: m.variants.map((v) => (v.id === variantId ? { ...v, pattern } : v)),
 		}))
 		commit(
 			{ ...next, declarations: updateDeclarations(next, pattern, declaredHere.current) },
-			{ persist: false }
+			{ persist: false, patternTexts: { [variantId]: source } }
 		)
 	}
 
@@ -278,7 +291,9 @@ export default function Editor({
 											label={`${name ?? locale} translation`}
 											placeholder={isReference ? "Enter text…" : `Translate to ${name ?? locale}…`}
 											fields={fields.current}
-											onChange={(variantId, pattern) => editPattern(message, variantId, pattern)}
+											onChange={(variantId, pattern, source) =>
+												editPattern(message, variantId, pattern, source)
+											}
 											onBlur={persist}
 										/>
 										{showMachineTranslate && (

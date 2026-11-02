@@ -7,6 +7,7 @@ import {
 	type SelectVariantEventDetail,
 } from "@inlang/editor-component"
 import type { BundleNested, Pattern } from "@inlang/sdk"
+import { patternToEditorText } from "../../../../messages/pattern.js"
 
 export type EditorMessage = BundleNested["messages"][number]
 export type EditorVariant = EditorMessage["variants"][number]
@@ -31,33 +32,45 @@ export function PatternField({
 	placeholder: string
 	/** the pattern editors by variant id, to focus a form that was just added */
 	fields: Map<string, InlangPatternEditor>
-	onChange: (variantId: string, pattern: Pattern) => void
+	onChange: (variantId: string, pattern: Pattern, source: string) => void
 	onBlur: () => void
 }) {
 	const host = useRef<HTMLDivElement>(null)
 	const editor = useRef<InlangPatternEditor>(undefined)
 	const given = useRef<string>(undefined)
+	const givenSource = useRef<string>(undefined)
 	const callbacks = useRef({ onChange, onBlur })
 	callbacks.current = { onChange, onBlur }
 
 	useLayoutEffect(() => {
 		// a new element has no text yet (React's StrictMode mounts twice in development)
 		given.current = undefined
+		givenSource.current = undefined
 		const element = new InlangPatternEditor()
-		element.addEventListener("change", (event) => {
+		const change = (event: Event) => {
 			event.stopPropagation()
 			const detail = (event as CustomEvent<ChangeEventDetail>).detail
 			const edited = detail.newData as EditorVariant | undefined
 			if (!edited) return
-			given.current = JSON.stringify(edited.pattern)
-			callbacks.current.onChange(detail.entityId, edited.pattern)
-		})
-		element.addEventListener("pattern-editor-blur", () => callbacks.current.onBlur())
+			// Editor 13 emits the complete AST, including literal arguments and token metadata.
+			// Its display text omits some of that information, so serialize the AST for the host.
+			const pattern = edited.pattern
+			const source = patternToEditorText(pattern)
+			if (source === givenSource.current) return
+			given.current = JSON.stringify(pattern)
+			givenSource.current = source
+			callbacks.current.onChange(detail.entityId, pattern, source)
+		}
+		const blur = () => callbacks.current.onBlur()
+		element.addEventListener("change", change)
+		element.addEventListener("pattern-editor-blur", blur)
 		host.current!.append(element)
 		editor.current = element
 		fields.set(variant.id, element)
 		return () => {
 			if (fields.get(variant.id) === element) fields.delete(variant.id)
+			element.removeEventListener("change", change)
+			element.removeEventListener("pattern-editor-blur", blur)
 			element.remove()
 		}
 		// one element per variant: the parent keys the field by variant id
@@ -73,6 +86,8 @@ export function PatternField({
 		const text = JSON.stringify(variant.pattern)
 		if (text === given.current) return
 		given.current = text
+		const source = patternToEditorText(variant.pattern)
+		givenSource.current = source
 		element.variant = variant
 	}, [variant, declarations, label, placeholder])
 

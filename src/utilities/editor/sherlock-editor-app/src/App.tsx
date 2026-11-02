@@ -20,8 +20,26 @@ function App() {
 
 	useEffect(() => {
 		const unsubscribe = vscode.onMessage((message: unknown) => {
+			if (!message || typeof message !== "object" || !("command" in message)) return
+			if (message.command !== "change" || !("data" in message)) return
+			const data = message.data
+			if (!data || typeof data !== "object" || !("bundle" in data) || !("settings" in data)) return
+			if (
+				data.bundle !== undefined &&
+				data.bundle !== null &&
+				(typeof data.bundle !== "object" ||
+					!("messages" in data.bundle) ||
+					!Array.isArray(data.bundle.messages))
+			)
+				return
+			if (
+				!data.settings ||
+				typeof data.settings !== "object" ||
+				!("locales" in data.settings) ||
+				!Array.isArray(data.settings.locales)
+			)
+				return
 			const typedMessage = message as VscodeMessage
-			if (typedMessage?.command !== "change") return
 			setData(typedMessage.data)
 			if (typedMessage.reset) setResetKey((key) => key + 1)
 		})

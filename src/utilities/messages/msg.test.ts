@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 import { msg } from "./msg.js"
 
@@ -10,6 +10,7 @@ vi.mock("vscode", () => ({
 		createStatusBarItem: vi.fn().mockReturnValue({
 			show: vi.fn(),
 			hide: vi.fn(),
+			dispose: vi.fn(),
 			color: undefined,
 			text: "",
 		}),
@@ -24,6 +25,22 @@ vi.mock("vscode", () => ({
 }))
 
 describe("msg function", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+		vi.useFakeTimers()
+	})
+	afterEach(() => {
+		vi.clearAllTimers()
+		vi.useRealTimers()
+	})
+	it("disposes a temporary status-bar item when its duration expires", () => {
+		msg("Temporary message")
+		const item = vi.mocked(vscode.window.createStatusBarItem).mock.results[0]!.value
+		expect(item.dispose).not.toHaveBeenCalled()
+		vi.advanceTimersByTime(3000)
+		expect(item.dispose).toHaveBeenCalledOnce()
+	})
+
 	it("should display a status bar message with default parameters", () => {
 		msg("Test message")
 		expect(vscode.window.createStatusBarItem).toHaveBeenCalledWith(

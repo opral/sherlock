@@ -12,6 +12,17 @@ const runtimeLease = vi.hoisted(() => ({
 	isCurrent: vi.fn(),
 }))
 
+vi.mock("../utilities/project/projectResourceSynchronization.js", () => ({
+	saveProjectResources: vi.fn(async () => undefined),
+}))
+
+vi.mock("../utilities/messages/pattern.js", () => ({
+	patternToEditorText: vi.fn(() => "Current content"),
+}))
+vi.mock("../utilities/editor/helper/writeBundle.js", () => ({
+	writeBundle: vi.fn(async (db) => db.transaction().execute(async () => undefined)),
+}))
+
 vi.mock("vscode", () => ({
 	commands: {
 		registerCommand: vi.fn(),
@@ -41,6 +52,10 @@ vi.mock("../configuration.js", () => ({
 vi.mock("../utilities/messages/query.js", () => ({
 	getPatternFromString: vi.fn(),
 	getStringFromPattern: vi.fn(),
+}))
+
+vi.mock("../utilities/editor/helper/normalizeVariantEdit.js", () => ({
+	normalizeVariantChange: vi.fn(async ({ bundle }) => bundle),
 }))
 
 vi.mock("../utilities/project/selectBundleById.js", () => ({
@@ -143,7 +158,7 @@ describe("editMessageCommand", () => {
 
 		await editMessageCommand.callback({ bundleId: "testBundle", locale: "en" })
 
-		expect(msg).toHaveBeenCalledWith("Variant with locale en not found.")
+		expect(msg).toHaveBeenCalledWith("VariantRow with locale en not found.")
 	})
 
 	it("should cancel the operation if no new value is provided", async () => {
@@ -203,10 +218,10 @@ describe("editMessageCommand", () => {
 			messages: [
 				{
 					id: "testMessage",
-					bundleId: "testBundle",
+					bundle_id: "testBundle",
 					locale: "en",
 					selectors: [],
-					variants: [{ id: "testVariant", messageId: "testMessage", matches: [], pattern: [] }],
+					variants: [{ id: "testVariant", message_id: "testMessage", matches: [], pattern: [] }],
 				},
 			],
 		} as any)
@@ -234,14 +249,14 @@ describe("editMessageCommand", () => {
 			messages: [
 				{
 					id: "testMessage",
-					bundleId: "testBundle",
+					bundle_id: "testBundle",
 					locale: "en",
 					selectors: [],
 					declarations: [],
 					variants: [
 						{
 							id: "testVariant",
-							messageId: "testMessage",
+							message_id: "testMessage",
 							pattern: [
 								{
 									type: "text",
@@ -289,6 +304,7 @@ describe("editMessageCommand", () => {
 		})
 		expect(getPatternFromString).toHaveBeenCalledWith({
 			string: "Updated content",
+			previousPattern: mockBundle.messages[0]!.variants[0]!.pattern,
 		})
 		expect(mockTransaction.execute).toHaveBeenCalled()
 		expect(CONFIGURATION.EVENTS.ON_DID_EDIT_MESSAGE.fire).toHaveBeenCalled()

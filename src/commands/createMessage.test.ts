@@ -15,6 +15,18 @@ const runtimeLease = vi.hoisted(() => ({
 	isCurrent: vi.fn(),
 }))
 
+vi.mock("../utilities/project/projectResourceSynchronization.js", () => ({
+	saveProjectResources: vi.fn(async () => undefined),
+}))
+
+vi.mock("../utilities/editor/helper/mutateBundle.js", () => ({
+	mutateBundle: vi.fn(async (_project, _bundleId, mutation) => mutation(undefined)),
+}))
+
+vi.mock("../utilities/editor/helper/normalizeBundle.js", () => ({
+	normalizeBundle: vi.fn(async (_project, bundle) => bundle),
+}))
+
 vi.mock("vscode", () => ({
 	window: {
 		showInputBox: vi.fn(),

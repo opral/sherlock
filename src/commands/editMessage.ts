@@ -1,17 +1,21 @@
 import { msg } from "../utilities/messages/msg.js"
 import { commands, window } from "vscode"
-import { getPatternFromString, getStringFromPattern } from "../utilities/messages/query.js"
+import { getPatternFromString } from "../utilities/messages/query.js"
 import { CONFIGURATION } from "../configuration.js"
-import { type Bundle, type InlangProject } from "@inlang/sdk"
+import { type BundleRow, type InlangProject } from "@inlang/sdk"
 import { getProjectRuntime } from "../utilities/project/projectRuntime.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
+import { normalizeVariantChange } from "../utilities/editor/helper/normalizeVariantEdit.js"
+import { patternToEditorText } from "../utilities/messages/pattern.js"
+import { writeBundle } from "../utilities/editor/helper/writeBundle.js"
 import { saveProjectResources } from "../utilities/project/projectResourceSynchronization.js"
+import { mutateBundle } from "../utilities/editor/helper/mutateBundle.js"
 
 export const editMessageCommand = {
 	command: "sherlock.editMessage",
 	title: "Sherlock: Edit a Message",
 	register: commands.registerCommand,
-	callback: async function ({ bundleId, locale }: { bundleId: Bundle["id"]; locale: string }) {
+	callback: async function ({ bundleId, locale }: { bundleId: BundleRow["id"]; locale: string }) {
 		const lease = getProjectRuntime<InlangProject>().activeProject()
 		if (!lease) return msg("No active project.")
 		const bundleResult = await lease.runTask(() => selectBundleById(lease.project, bundleId))
@@ -31,51 +35,45 @@ export const editMessageCommand = {
 		const variant = message?.variants.find((v) => v.matches.length === 0)
 
 		if (!variant) {
-			return msg(`Variant with locale ${locale} not found.`)
+			return msg(`VariantRow with locale ${locale} not found.`)
 		}
 
 		// Construct the complete pattern text
-		const stringPattern = getStringFromPattern({
-			pattern: variant.pattern,
-			locale,
-			messageId: message.id,
-		})
+		const stringPattern = patternToEditorText(variant.pattern)
 
 		const newValue = await window.showInputBox({
 			title: "Enter new value:",
 			value: stringPattern,
 		})
 
-		if (!newValue) {
+		if (newValue === undefined) {
 			return
 		}
 
-		variant.pattern = getPatternFromString({ string: newValue })
-
 		try {
-			const updated = await lease.runTask(async () => {
-				await lease.project.db.transaction().execute(async (trx) => {
-					await trx
-						.updateTable("inlang_message")
-						.set({
-							selectors: message.selectors,
-						})
-						.where("inlang_message.id", "=", message.id)
-						.execute()
-
-					return await trx
-						.updateTable("inlang_variant")
-						.set({
-							pattern: variant.pattern,
-						})
-						.where("inlang_variant.id", "=", variant.id)
-						.returningAll()
-						.execute()
+			const updated = await lease.runTask(() =>
+				mutateBundle(lease.project, bundleId, async (current) => {
+					const currentMessage = current?.messages.find((entry) => entry.locale === locale)
+					const currentVariant = currentMessage?.variants.find((entry) => entry.id === variant.id)
+					if (!current || !currentVariant)
+						throw new Error(
+							`Translation "${bundleId}" (${locale}) changed while the input was open.`
+						)
+					const canonical = await normalizeVariantChange({
+						project: lease.project,
+						bundle: current,
+						variant: currentVariant,
+						pattern: getPatternFromString({
+							string: newValue,
+							previousPattern: currentVariant.pattern,
+						}),
+						editorText: newValue,
+					})
+					await writeBundle(lease.project.db, canonical)
+					await saveProjectResources(lease.project, lease.path)
+					return true
 				})
-				// write the edit to the translation files, like creating a message does
-				await saveProjectResources(lease.project, lease.path)
-				return true
-			})
+			)
 			if (updated.status !== "completed") {
 				return msg("The active project changed before the message was updated.")
 			}

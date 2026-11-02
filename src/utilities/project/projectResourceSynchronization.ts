@@ -7,6 +7,10 @@ import * as vscode from "vscode"
 import { loadProjectFromDirectory, saveProjectToDirectory, type InlangProject } from "@inlang/sdk"
 import { deactivateBeforeClose, type ProjectSession } from "./projectSession.js"
 import { createFileSystemMapper, type FileSystem } from "../fs/createFileSystemMapper.js"
+import {
+	clearOmittedEmptyJsonResources,
+	type ResourceExportSnapshot,
+} from "./clearEmptyJsonResources.js"
 
 const DEBOUNCE_MS = 150
 const MISSING_RESOURCE = Symbol("missing resource")
@@ -582,13 +586,42 @@ export function createProjectResourceSynchronization(): ProjectResourceSynchroni
 		async save(project, projectPath) {
 			await runWithResourceWrite(project, writeState, async (recordResourceWrite) => {
 				const dottedKeySnapshots = await snapshotExplicitDottedMessageKeys(project, projectPath)
+				const exports = new Map<string, ResourceExportSnapshot>()
 				const trackedFileSystem = observeFileSystemMutations(nodeFsPromises, recordResourceWrite)
+				// Keep SDK provenance keyed by the same Lix instance while observing export inputs/outputs.
+				const exportProject: InlangProject = {
+					...project,
+					plugins: {
+						get: async () =>
+							(await project.plugins.get()).map((plugin) =>
+								plugin.exportFiles
+									? {
+											...plugin,
+											exportFiles: async (args) => {
+												const files = await plugin.exportFiles!(args)
+												exports.set(plugin.key, {
+													existingFiles: args.files ?? [],
+													exportedFiles: files,
+												})
+												return files
+											},
+										}
+									: plugin
+							),
+					},
+				}
 				await saveProjectToDirectory({
 					fs: createFileSystemMapper(projectPath, trackedFileSystem),
-					project,
+					project: exportProject,
 					path: projectPath,
 				})
 				await restoreExplicitDottedMessageKeys(dottedKeySnapshots, trackedFileSystem)
+				await clearOmittedEmptyJsonResources({
+					project,
+					projectPath,
+					fileSystem: trackedFileSystem,
+					exports,
+				})
 			})
 		},
 	}
