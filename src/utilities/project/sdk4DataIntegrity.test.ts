@@ -601,7 +601,7 @@ describe("editor changes (the webview's diff of a bundle, written by applyChange
 					},
 				},
 			],
-			patternTexts: { [staleVariant.id]: "Later {name}" },
+			patternEdits: [staleVariant.id],
 		})
 		const stored = (await selectBundleById(project, before.id))!
 		const message = stored.messages.find((entry) => entry.locale === "en")!

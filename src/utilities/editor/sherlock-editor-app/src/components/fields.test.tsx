@@ -4,11 +4,10 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import type { InlangPatternEditor } from "@inlang/editor-component"
 import { PatternField, type EditorVariant } from "./fields.js"
-import { patternToEditorText, textToPattern } from "../../../../messages/pattern.js"
 import Editor from "./Editor.js"
 import { vscode } from "../utils/vscode.js"
 
-describe("native pattern field source and lifecycle", () => {
+describe("native pattern field AST and lifecycle", () => {
 	let root: Root
 	let container: HTMLDivElement
 	beforeEach(() => {
@@ -86,11 +85,7 @@ describe("native pattern field source and lifecycle", () => {
 		await act(async () => replaceFirstText(element, "changed literal {name}"))
 		const expected = structuredClone(pattern)
 		;(expected[0] as { value: string }).value = "changed literal {name}\n"
-		expect(onChange).toHaveBeenCalledExactlyOnceWith("v", expected, patternToEditorText(expected))
-		expect(onChange.mock.calls[0]![2]).toContain("\\{name\\}\n")
-		expect(onChange.mock.calls[0]![2]).toContain('{"count"}')
-		expect(onChange.mock.calls[0]![2]).toContain('minimumFractionDigits="2"')
-		expect(onChange.mock.calls[0]![2]).toMatch(/\n$/)
+		expect(onChange).toHaveBeenCalledExactlyOnceWith("v", expected)
 	})
 
 	it("retains typed source on local rerenders and ignores programmatic updates", async () => {
@@ -108,7 +103,7 @@ describe("native pattern field source and lifecycle", () => {
 		expect(onChange).toHaveBeenCalledOnce()
 	})
 
-	it("sends typed tags around a variable through the lossless host source contract", async () => {
+	it("sends typed tags around a variable as the native AST", async () => {
 		const { element, onChange } = await mount([
 			{ type: "text", value: "before" },
 			{ type: "expression", arg: { type: "variable-reference", name: "name" } },
@@ -123,14 +118,12 @@ describe("native pattern field source and lifecycle", () => {
 			element.editor.setEditorState(element.editor.parseEditorState(state))
 		})
 		expect(onChange).toHaveBeenCalledOnce()
-		const [, pattern, source] = onChange.mock.calls[0]!
-		expect(source).toBe("\\<b>{name}\\</b>\n")
+		const [, pattern] = onChange.mock.calls[0]!
 		expect(pattern).toEqual([
 			{ type: "text", value: "<b>" },
 			{ type: "expression", arg: { type: "variable-reference", name: "name" } },
 			{ type: "text", value: "</b>\n" },
 		])
-		expect(textToPattern(source, pattern)).toEqual(pattern)
 	})
 
 	it("removes field callbacks and registry ownership on unmount", async () => {
@@ -150,7 +143,7 @@ describe("native pattern field source and lifecycle", () => {
 		expect(onBlur).not.toHaveBeenCalled()
 	})
 
-	it("batches the edited AST and its lossless source in the host protocol", async () => {
+	it("batches the edited AST and its intent ID in the host protocol", async () => {
 		const post = vi.spyOn(vscode, "postMessage")
 		const variant: EditorVariant = {
 			id: "v",
@@ -180,7 +173,7 @@ describe("native pattern field source and lifecycle", () => {
 		expect(post.mock.calls[0]![0]).toMatchObject({
 			command: "apply-changes",
 			persist: false,
-			patternTexts: { v: "literal \\{name\\}\n" },
+			patternEdits: ["v"],
 			changes: [
 				{
 					entity: "variant",
@@ -191,5 +184,6 @@ describe("native pattern field source and lifecycle", () => {
 				},
 			],
 		})
+		expect(post.mock.calls[0]![0]).not.toHaveProperty("patternTexts")
 	})
 })

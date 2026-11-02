@@ -528,17 +528,17 @@ describe("editorView", () => {
 		expect(saveProjectResources).not.toHaveBeenCalled()
 	})
 
-	it("passes an editor batch and its lossless pattern sources to the resource parser", async () => {
+	it("passes native AST edit intent through to the resource mutation", async () => {
 		const { view, project } = createTestView()
 		await view.createOrShowPanel()
 		const changes = [{ entity: "variant", entityId: "edited", newData: { id: "edited" } }]
-		const patternTexts = { edited: "Literal \\{name\\} <b>{time}</b>\n" }
-		await mocks.receiveMessage?.({ command: "apply-changes", changes, patternTexts, persist: true })
+		const patternEdits = ["edited"]
+		await mocks.receiveMessage?.({ command: "apply-changes", changes, patternEdits, persist: true })
 		expect(applyResourceChanges).toHaveBeenCalledExactlyOnceWith({
 			project,
 			bundleId: "welcome",
 			changes,
-			patternTexts,
+			patternEdits,
 		})
 		expect(saveProject).toHaveBeenCalledOnce()
 	})

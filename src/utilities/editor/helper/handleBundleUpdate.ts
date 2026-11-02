@@ -208,6 +208,7 @@ export async function applyResourceChanges(args: {
 	bundleId: string
 	changes: readonly ChangeEventDetail[]
 	patternTexts?: Record<string, string>
+	patternEdits?: readonly string[]
 }): Promise<boolean> {
 	if (!args.changes.length) return false
 	return mutateBundle(args.project, args.bundleId, async (current) => {
@@ -224,7 +225,7 @@ export async function applyResourceChanges(args: {
 				if (!change.newData) draft = undefined
 				// Text edits carry optimistic, derived declarations from the panel's old snapshot.
 				// Keep current selector declarations; the resource parser derives inputs for new text.
-				else if (!Object.keys(args.patternTexts ?? {}).length)
+				else if (!args.patternEdits?.length && !Object.keys(args.patternTexts ?? {}).length)
 					draft.declarations = structuredClone((change.newData as BundleRow).declarations)
 			} else if (change.entity === "message") {
 				const index = draft.messages.findIndex((entry) => entry.id === change.entityId)
@@ -259,12 +260,13 @@ export async function applyResourceChanges(args: {
 				}
 				const row = change.newData as VariantRow
 				const source = args.patternTexts?.[change.entityId]
-				const messageId = source !== undefined && previous ? previous.message_id : row.message_id
+				const patternOnly = source !== undefined || args.patternEdits?.includes(change.entityId)
+				const messageId = patternOnly && previous ? previous.message_id : row.message_id
 				const message = draft.messages.find((entry) => entry.id === messageId)
 				if (!message) throw new Error("The variant's message does not exist in this bundle")
 				// A stale text edit must not recreate a variant removed while the field was open.
 				if (
-					source !== undefined &&
+					patternOnly &&
 					!previous &&
 					current.messages.some((entry) => entry.id === row.message_id)
 				)
@@ -275,9 +277,7 @@ export async function applyResourceChanges(args: {
 				const variant = {
 					id: change.entityId,
 					message_id: messageId,
-					matches: structuredClone(
-						source !== undefined && previous ? previous.matches : row.matches
-					),
+					matches: structuredClone(patternOnly && previous ? previous.matches : row.matches),
 					pattern: structuredClone(pattern),
 				}
 				const index = message.variants.findIndex((entry) => entry.id === change.entityId)

@@ -192,6 +192,7 @@ export function editorView(args: {
 									bundleId: targetBundleId,
 									changes: message.changes,
 									patternTexts: message.patternTexts,
+									patternEdits: message.patternEdits,
 								})
 							)
 							if (!changed) await refreshView({ reset: true })
