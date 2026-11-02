@@ -12,17 +12,17 @@ importers:
         specifier: 3.46.0-build2
         version: 3.46.0-build2
       '@inlang/editor-component':
-        specifier: 14.0.0
-        version: 14.0.0(@inlang/sdk@4.1.0)(@types/react@19.2.7)
+        specifier: 14.0.1
+        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@inlang/recommend-sherlock':
         specifier: 0.2.1
         version: 0.2.1
       '@inlang/sdk':
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.1.1
+        version: 4.1.1
       '@inlang/settings-component':
         specifier: 5.0.0
-        version: 5.0.0(@inlang/sdk@4.1.0)(@types/react@19.2.7)
+        version: 5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.27)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
@@ -67,17 +67,17 @@ importers:
         specifier: ^2.29.8
         version: 2.29.8(@types/node@20.19.27)
       '@inlang/plugin-i18next':
-        specifier: 6.5.0
-        version: 6.5.0
+        specifier: 6.5.1
+        version: 6.5.1
       '@inlang/plugin-json':
-        specifier: 5.1.64
-        version: 5.1.64
+        specifier: 5.1.65
+        version: 5.1.65
       '@inlang/plugin-m-function-matcher':
         specifier: 2.3.0
         version: 2.3.0(@typescript-eslint/types@8.51.0)
       '@inlang/plugin-message-format':
-        specifier: 4.5.6
-        version: 4.5.6
+        specifier: 4.5.7
+        version: 4.5.7
       '@inlang/plugin-t-function-matcher':
         specifier: 2.0.27
         version: 2.0.27
@@ -169,11 +169,11 @@ importers:
   src/utilities/editor/sherlock-editor-app:
     dependencies:
       '@inlang/editor-component':
-        specifier: 14.0.0
-        version: 14.0.0(@inlang/sdk@4.1.0)(@types/react@19.2.7)
+        specifier: 14.0.1
+        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
       '@inlang/sdk':
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.1.1
+        version: 4.1.1
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -1117,22 +1117,22 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@inlang/editor-component@14.0.0':
-    resolution: {integrity: sha512-V7xmA4g1SbhyMB6CWuEZBnajUNe8pYcTn57YCJmTDAt7IaZJZZDIvy86X9FzAZ4K03jJL/0ys5IDgQ7hBPBe7g==}
+  '@inlang/editor-component@14.0.1':
+    resolution: {integrity: sha512-hizd9A9KbK2jr0nQC5sQCVNKrk5FzxrUhu9J0UuaFK7jzRTzX38Qm+ZFbTAbziiEOD8YZjXykOwyoROym1u8Xw==}
     peerDependencies:
-      '@inlang/sdk': ^4.1.0
+      '@inlang/sdk': ^4.1.1
 
-  '@inlang/plugin-i18next@6.5.0':
-    resolution: {integrity: sha512-wbX1AoVqLtigPhLM/yHbjdFotnn5P1mwAI5wlJiB6hpnjZ31375Eo90amcAlg1dL5rb6d2eDfU6g9B0FTGhQ3Q==}
+  '@inlang/plugin-i18next@6.5.1':
+    resolution: {integrity: sha512-5kKfSKrGWeBY+LmDVHedbtFBogfrR8Czxwdipvz3krZLWIZ+EOQNjGMKsJssnlJ6rTRv3qEjnEhHnOBA0tWGDA==}
 
-  '@inlang/plugin-json@5.1.64':
-    resolution: {integrity: sha512-8DVpavq8E09w1Bp4LbN36QkoGmMsp1H01grX0QJ1Ts2GNw0eAV4ZqoYtlN0w9MWyqrtAJWzw/p0xd3AyZVCcew==}
+  '@inlang/plugin-json@5.1.65':
+    resolution: {integrity: sha512-An80y4wsBjQKm4T3aqGDYm4LceHMFmtF+NVtCCUHBZpETDhkX2V8LsTrXEPjyy16BvXWtC8uApchE42OCsz3uw==}
 
   '@inlang/plugin-m-function-matcher@2.3.0':
     resolution: {integrity: sha512-C1wBvCl+xwrfBS18OO6+JEYZDeI2pnLg/yed6C/TSGOU+K4chsV8kEkUuy42L335yX8Oe/yK7SMyVwJRYBWbWQ==}
 
-  '@inlang/plugin-message-format@4.5.6':
-    resolution: {integrity: sha512-6ORzOI5D2vER/r/sK/G5EDkCgpvIKBTJeJQ0wHQ86otQiJnr2WeulbiYBMz3D5oz7CYb1QSvtfK0Lxjprx4wqw==}
+  '@inlang/plugin-message-format@4.5.7':
+    resolution: {integrity: sha512-rjRd0ityaVOIvmm1VLGLwnbwZbEHwS6EOyUPdiMhwYZ0JJmIMoLG+BxozHnwMB9QH+R1lqpLYbCZmlTDBtG4zg==}
 
   '@inlang/plugin-t-function-matcher@2.0.27':
     resolution: {integrity: sha512-YNtwhdhbJLYp8o3GxNez2V8mCsp/Kswnmf9je9v78durQextELdQYmeETB1L1oq7yOb/KF4nwZ36vZgzOnRDmQ==}
@@ -1148,8 +1148,8 @@ packages:
     resolution: {integrity: sha512-AwGasJATSKq9J3EVBdmIbpU++2DTI8z0J5WbejT6lqymLaoDB4cf95Zp0ijmJp7XUNP/z10qQfA2lz0TAojRYA==}
     engines: {node: '>=20.0.0'}
 
-  '@inlang/sdk@4.1.0':
-    resolution: {integrity: sha512-pPlaxyemcFMBcwBx31zbSNWwKORSLc2yv93v0uGCh4QgNh/kBRuLlBxbubmME6UJFsj+5nbao2WDZjz3Fzs+FA==}
+  '@inlang/sdk@4.1.1':
+    resolution: {integrity: sha512-eeRnaW6mZPctXd8mwnATWEQgSg0J+EneUsBX2pJEl/7YRfosApCoc5aR4bHKwizLDd0CB3rtfuqteYirG5VSsg==}
     engines: {node: '>=20.0.0'}
 
   '@inlang/settings-component@5.0.0':
@@ -6523,9 +6523,9 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inlang/editor-component@14.0.0(@inlang/sdk@4.1.0)(@types/react@19.2.7)':
+  '@inlang/editor-component@14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 4.1.0
+      '@inlang/sdk': 4.1.1
       '@lexical/plain-text': 0.16.1
       '@lexical/utils': 0.16.1
       '@lit/task': 1.0.3
@@ -6538,15 +6538,15 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@inlang/plugin-i18next@6.5.0':
+  '@inlang/plugin-i18next@6.5.1':
     dependencies:
       '@babel/parser': 7.29.8
-      '@inlang/sdk': 4.1.0
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.28
 
-  '@inlang/plugin-json@5.1.64':
+  '@inlang/plugin-json@5.1.65':
     dependencies:
-      '@inlang/sdk': 4.1.0
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.28
 
   '@inlang/plugin-m-function-matcher@2.3.0(@typescript-eslint/types@8.51.0)':
@@ -6557,9 +6557,9 @@ snapshots:
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@inlang/plugin-message-format@4.5.6':
+  '@inlang/plugin-message-format@4.5.7':
     dependencies:
-      '@inlang/sdk': 4.1.0
+      '@inlang/sdk': 4.1.1
       '@sinclair/typebox': 0.31.30
 
   '@inlang/plugin-t-function-matcher@2.0.27':
@@ -6585,16 +6585,16 @@ snapshots:
       kysely: 0.28.17
       uuid: 14.0.2
 
-  '@inlang/sdk@4.1.0':
+  '@inlang/sdk@4.1.1':
     dependencies:
       '@lix-js/sdk': 0.20.1
       '@sinclair/typebox': 0.31.30
       kysely: 0.28.17
       uuid: 14.0.2
 
-  '@inlang/settings-component@5.0.0(@inlang/sdk@4.1.0)(@types/react@19.2.7)':
+  '@inlang/settings-component@5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 4.1.0
+      '@inlang/sdk': 4.1.1
       '@lit/task': 1.0.3
       '@shoelace-style/shoelace': 2.14.0(@types/react@19.2.7)
       '@sinclair/typebox': 0.31.28
