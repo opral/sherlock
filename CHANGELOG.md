@@ -8,6 +8,8 @@
 
   Coalesce pending typing updates so large projects save the latest text without processing every intermediate keystroke.
 
+- Update the Inlang SDK to 4.1.2 to share concurrent project settings reads and avoid exhausting the worker queue.
+
 ## 2.5.2
 
 ### Patch Changes

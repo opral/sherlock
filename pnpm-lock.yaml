@@ -13,16 +13,16 @@ importers:
         version: 3.46.0-build2
       '@inlang/editor-component':
         specifier: 14.0.1
-        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
+        version: 14.0.1(@inlang/sdk@4.1.2)(@types/react@19.2.7)
       '@inlang/recommend-sherlock':
         specifier: 0.2.1
         version: 0.2.1
       '@inlang/sdk':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 4.1.2
+        version: 4.1.2
       '@inlang/settings-component':
         specifier: 5.0.0
-        version: 5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)
+        version: 5.0.0(@inlang/sdk@4.1.2)(@types/react@19.2.7)
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.27)(jsdom@27.4.0)(lightningcss@1.30.2)(terser@5.44.1))
@@ -170,10 +170,10 @@ importers:
     dependencies:
       '@inlang/editor-component':
         specifier: 14.0.1
-        version: 14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)
+        version: 14.0.1(@inlang/sdk@4.1.2)(@types/react@19.2.7)
       '@inlang/sdk':
-        specifier: 4.1.1
-        version: 4.1.1
+        specifier: 4.1.2
+        version: 4.1.2
       react:
         specifier: ^19.0.0
         version: 19.2.3
@@ -1150,6 +1150,10 @@ packages:
 
   '@inlang/sdk@4.1.1':
     resolution: {integrity: sha512-eeRnaW6mZPctXd8mwnATWEQgSg0J+EneUsBX2pJEl/7YRfosApCoc5aR4bHKwizLDd0CB3rtfuqteYirG5VSsg==}
+    engines: {node: '>=20.0.0'}
+
+  '@inlang/sdk@4.1.2':
+    resolution: {integrity: sha512-Cy1z1JdlJibu0UDW3jBfc3YzJnFuEHkhouyNaAAi0VCM9xreQ5vgBZP2/JkuNpN2mN2taLN035TAgRl3xwROwA==}
     engines: {node: '>=20.0.0'}
 
   '@inlang/settings-component@5.0.0':
@@ -6523,9 +6527,9 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@inlang/editor-component@14.0.1(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
+  '@inlang/editor-component@14.0.1(@inlang/sdk@4.1.2)(@types/react@19.2.7)':
     dependencies:
-      '@inlang/sdk': 4.1.1
+      '@inlang/sdk': 4.1.2
       '@lexical/plain-text': 0.16.1
       '@lexical/utils': 0.16.1
       '@lit/task': 1.0.3
@@ -6592,9 +6596,16 @@ snapshots:
       kysely: 0.28.17
       uuid: 14.0.2
 
-  '@inlang/settings-component@5.0.0(@inlang/sdk@4.1.1)(@types/react@19.2.7)':
+  '@inlang/sdk@4.1.2':
     dependencies:
-      '@inlang/sdk': 4.1.1
+      '@lix-js/sdk': 0.20.1
+      '@sinclair/typebox': 0.31.30
+      kysely: 0.28.17
+      uuid: 14.0.2
+
+  '@inlang/settings-component@5.0.0(@inlang/sdk@4.1.2)(@types/react@19.2.7)':
+    dependencies:
+      '@inlang/sdk': 4.1.2
       '@lit/task': 1.0.3
       '@shoelace-style/shoelace': 2.14.0(@types/react@19.2.7)
       '@sinclair/typebox': 0.31.28
