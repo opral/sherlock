@@ -1,5 +1,11 @@
 # Sherlock
 
+## 2.6.0
+
+### Minor Changes
+
+- b56139a: Compose the shared bundle Description editor and preserve description-only edits through webview writes and escaped hover display. Requires the coordinated SDK/editor-component description releases before publication.
+
 ## 2.5.3
 
 ### Patch Changes
