@@ -35,7 +35,10 @@ export async function applyChange(db: Db, change: ChangeEventDetail) {
 	switch (change.entity) {
 		case "bundle": {
 			const bundle = change.newData as BundleRow
-			const values = { declarations: bundle.declarations }
+			const values = {
+				declarations: bundle.declarations,
+				...(bundle.description !== undefined ? { description: bundle.description } : {}),
+			}
 			await db
 				.insertInto("inlang_bundle")
 				.values({ id: change.entityId, ...values })

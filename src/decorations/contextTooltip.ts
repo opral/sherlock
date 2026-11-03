@@ -119,7 +119,7 @@ export async function contextTooltip(
 		})
 	)
 
-	const contextTable = `<table>${contextTableRows.map(renderTranslationRow).join("")}</table>`
+	const contextTable = `${bundle.description ? `<p>${escapeHtml(bundle.description).replaceAll("\n", "<br>")}</p>` : ""}<table>${contextTableRows.map(renderTranslationRow).join("")}</table>`
 	const tooltip = new MarkdownString(contextTable, true)
 
 	tooltip.supportHtml = true

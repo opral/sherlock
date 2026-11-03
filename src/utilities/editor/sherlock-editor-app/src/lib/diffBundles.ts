@@ -31,11 +31,18 @@ function variantRow(variant: VariantRow): VariantRow {
  */
 export function diffBundles(previous: BundleNested, next: BundleNested): ChangeEventDetail[] {
 	const changes: ChangeEventDetail[] = []
-	if (!same(previous.declarations, next.declarations)) {
+	if (
+		!same(previous.declarations, next.declarations) ||
+		(previous.description ?? null) !== (next.description ?? null)
+	) {
 		changes.push({
 			entity: "bundle",
 			entityId: next.id,
-			newData: { id: next.id, declarations: next.declarations },
+			newData: {
+				id: next.id,
+				declarations: next.declarations,
+				description: next.description ?? null,
+			},
 		})
 	}
 	const previousMessages = new Map(previous.messages.map((message) => [message.id, message]))

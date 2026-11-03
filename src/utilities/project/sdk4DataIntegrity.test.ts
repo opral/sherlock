@@ -372,6 +372,20 @@ describe("SDK 4 data integrity", () => {
 })
 
 describe("editor changes (the webview's diff of a bundle, written by applyChanges)", () => {
+ it("saves and clears description-only edits through the same bundle events as the webview", async () => {
+  const before = (await selectBundleById(project, "farewell"))!
+  const next = { ...before, description: "Final farewell after signing out" }
+  await applyChanges(project.db, diffBundles(before, next))
+  expect((await selectBundleById(project, "farewell"))!.description).toBe(next.description)
+  await save()
+  expect(JSON.parse(await read("messages/en.json")).farewell[0].description).toBe(next.description)
+  expect(await read("messages/de.json")).toBe(DE)
+  const described = (await selectBundleById(project, "farewell"))!
+  await applyChanges(project.db, diffBundles(described, { ...described, description: null }))
+  await save()
+  expect(JSON.parse(await read("messages/en.json")).farewell).toBe("Bye")
+ })
+
 	it("applies the current editor's structural plural batch without dropping declarations or forms", async () => {
 		const before = (await selectBundleById(project, "farewell"))!
 		const plural = addSelector(

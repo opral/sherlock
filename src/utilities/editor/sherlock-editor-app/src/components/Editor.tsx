@@ -7,7 +7,13 @@ import { v7 as uuidv7 } from "uuid"
 import { vscode } from "../utils/vscode.js"
 import { diffBundles } from "../lib/diffBundles.js"
 import { updateDeclarations } from "../lib/declarations.js"
-import { MessageForms, PatternField, type EditorMessage, type EditorVariant } from "./fields.js"
+import {
+	BundleDescription,
+	MessageForms,
+	PatternField,
+	type EditorMessage,
+	type EditorVariant,
+} from "./fields.js"
 import { TranslationProblems } from "./TranslationProblems.js"
 import { SelectorPanel } from "./SelectorPanel.js"
 import { Icon } from "./icons.js"
@@ -211,6 +217,10 @@ export default function Editor({
 						<Icon name="trash" />
 					</button>
 				</div>
+				<BundleDescription
+					bundle={bundle}
+					onChange={(description) => commit({ ...current.current, description }, { persist: true })}
+				/>
 			</header>
 
 			{showSelectors && (
