@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import * as vscode from "vscode"
 import { linterDiagnostics } from "./linterDiagnostics.js"
 import { getExtensionApi } from "../utilities/helper.js"
 import { resolveLintRules } from "./lintRuleResolver.js"
@@ -69,6 +70,16 @@ describe("linterDiagnostics", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mocks.projectChangeListener = undefined
+		vi.mocked(getExtensionApi)
+			.mockReset()
+			.mockResolvedValue({ messageReferenceMatchers: [] } as never)
+		vi.mocked(resolveLintRules).mockReset().mockResolvedValue([])
+		vi.mocked(selectBundleById).mockReset()
+		Object.assign(vscode.window, {
+			activeTextEditor: {
+				document: { getText: () => "m.hello()", uri: { path: "/workspace/page.ts" } },
+			},
+		})
 	})
 
 	it("refreshes exactly once from the coherent project-change signal", async () => {
@@ -106,6 +117,77 @@ describe("linterDiagnostics", () => {
 		await Promise.resolve()
 		expect(mocks.setDiagnostics).not.toHaveBeenCalled()
 	})
+
+	async function startDiagnostics() {
+		const tasks: Promise<unknown>[] = []
+		await linterDiagnostics({
+			subscriptions: [],
+			fs: {} as never,
+			session: {
+				project: {},
+				runTask: <T>(task: () => Promise<T>) => {
+					const execution = task().then((value) => ({ status: "completed", value }))
+					tasks.push(execution)
+					return execution
+				},
+			} as never,
+		})
+		return tasks
+	}
+
+	it("clears diagnostics without matching or querying references when no lint rules are configured", async () => {
+		const matcher = vi.fn(async () =>
+			Array.from({ length: 150 }, (_, index) => ({ bundleId: `message-${index}` }))
+		)
+		vi.mocked(getExtensionApi).mockResolvedValue({ messageReferenceMatchers: [matcher] } as never)
+		await startDiagnostics()
+		mocks.projectChangeListener?.()
+		await vi.waitFor(() => expect(mocks.setDiagnostics).toHaveBeenCalledOnce())
+		expect(mocks.setDiagnostics).toHaveBeenCalledWith(
+			vscode.window.activeTextEditor!.document.uri,
+			[]
+		)
+		expect(matcher).not.toHaveBeenCalled()
+		expect(selectBundleById).not.toHaveBeenCalled()
+	})
+
+	it.each(["a newer lint request", "another active editor"])(
+		"stops an outdated configured lint loop after %s",
+		async (cancellation) => {
+			const matcher = vi.fn(async () =>
+				Array.from({ length: 150 }, (_, index) => ({ bundleId: `message-${index}` }))
+			)
+			const ruleFn = vi.fn(async () => [])
+			vi.mocked(getExtensionApi).mockResolvedValue({ messageReferenceMatchers: [matcher] } as never)
+			vi.mocked(resolveLintRules).mockResolvedValue([{ name: "test", ruleFn }] as never)
+			let finishQuery!: (bundle: unknown) => void
+			vi.mocked(selectBundleById).mockReturnValueOnce(
+				new Promise((resolve) => {
+					finishQuery = resolve
+				}) as never
+			)
+			const tasks = await startDiagnostics()
+			mocks.projectChangeListener?.()
+			await vi.waitFor(() => expect(selectBundleById).toHaveBeenCalledOnce())
+			if (cancellation === "a newer lint request") {
+				vi.mocked(getExtensionApi).mockResolvedValue({ messageReferenceMatchers: [] } as never)
+				mocks.projectChangeListener?.()
+				await vi.waitFor(() => expect(mocks.setDiagnostics).toHaveBeenCalledOnce())
+			} else {
+				Object.assign(vscode.window, {
+					activeTextEditor: { document: { getText: () => "", uri: { path: "/workspace/new.ts" } } },
+				})
+			}
+			finishQuery({ id: "message-0" })
+			await Promise.all(tasks)
+			await Promise.resolve()
+			expect(selectBundleById).toHaveBeenCalledOnce()
+			expect(ruleFn).not.toHaveBeenCalled()
+			expect(mocks.setDiagnostics).toHaveBeenCalledTimes(
+				cancellation === "a newer lint request" ? 1 : 0
+			)
+		}
+	)
 
 	it("places each diagnostic at its matched message position", async () => {
 		vi.mocked(getExtensionApi).mockResolvedValue({

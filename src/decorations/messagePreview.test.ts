@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { contextTooltip } from "./contextTooltip.js"
 import { messagePreview } from "./messagePreview.js"
 
 const mocks = vi.hoisted(() => ({
@@ -189,5 +190,101 @@ describe("messagePreview", () => {
 		await vi.waitFor(() => expect(mocks.selectBundleById).toHaveBeenCalled())
 
 		expect(mocks.setDecorations).not.toHaveBeenCalled()
+	})
+
+	it("bounds lookups across matchers and coalesces updates for a 129-reference file", async () => {
+		const references = Array.from({ length: 129 }, (_, index) => ({
+			bundleId: `key_${index}`,
+			position: {
+				start: { line: index + 1, character: 1 },
+				end: { line: index + 1, character: 15 },
+			},
+		}))
+		mocks.getExtensionApi.mockResolvedValue({
+			messageReferenceMatchers: [
+				async () => references.slice(0, 70),
+				async () => references.slice(70),
+			],
+		})
+		const settings = { baseLocale: "en", locales: ["en"] }
+		const project = { settings: { get: vi.fn(async () => settings) } }
+		let release!: () => void
+		const gate = new Promise<void>((resolve) => (release = resolve))
+		let active = 0
+		let peak = 0
+		mocks.selectBundleById.mockImplementation(async (_project, id) => {
+			active += 1
+			peak = Math.max(peak, active)
+			await gate
+			await new Promise<void>((resolve) => setImmediate(resolve))
+			active -= 1
+			return { id, declarations: [], messages: [] }
+		})
+		messagePreview({
+			subscriptions: [],
+			session: {
+				project,
+				runTask: async <T>(task: () => Promise<T>) => ({
+					status: "completed" as const,
+					value: await task(),
+				}),
+			} as never,
+		})
+		mocks.projectChangeListener?.()
+		await vi.waitFor(() => expect(mocks.selectBundleById).toHaveBeenCalledTimes(8))
+		// Source/project events during a slow lookup must not start another unbounded run.
+		mocks.projectChangeListener?.()
+		mocks.projectChangeListener?.()
+		expect(mocks.selectBundleById).toHaveBeenCalledTimes(8)
+		release()
+
+		await vi.waitFor(() => expect(mocks.setDecorations).toHaveBeenCalledTimes(1))
+		expect(mocks.setDecorations.mock.calls[0]![1]).toHaveLength(129)
+		expect(peak).toBe(8)
+		expect(mocks.selectBundleById).toHaveBeenCalledTimes(8 + 129)
+		expect(mocks.getPreviewLocale).toHaveBeenCalledTimes(2)
+		expect(project.settings.get).toHaveBeenCalledTimes(2)
+		expect(contextTooltip).toHaveBeenLastCalledWith(references[128], project, {
+			bundle: { id: "key_128", declarations: [], messages: [] },
+			settings,
+		})
+	})
+
+	it("retries a queued refresh after the current lookup fails", async () => {
+		const project = {
+			settings: { get: vi.fn(async () => ({ baseLocale: "en", locales: ["en"] })) },
+		}
+		const error = new Error("Transient lookup failure")
+		let reject!: (reason: Error) => void
+		mocks.selectBundleById.mockImplementationOnce(
+			() =>
+				new Promise((_resolve, fail) => {
+					reject = fail
+				})
+		)
+		const loggedError = vi.spyOn(console, "error").mockImplementation(() => undefined)
+		try {
+			messagePreview({
+				subscriptions: [],
+				session: {
+					project,
+					runTask: async <T>(task: () => Promise<T>) => ({
+						status: "completed" as const,
+						value: await task(),
+					}),
+				} as never,
+			})
+			mocks.projectChangeListener?.()
+			await vi.waitFor(() => expect(mocks.selectBundleById).toHaveBeenCalledTimes(1))
+			mocks.projectChangeListener?.()
+			reject(error)
+
+			await vi.waitFor(() => expect(mocks.setDecorations).toHaveBeenCalledTimes(1))
+			expect(mocks.selectBundleById).toHaveBeenCalledTimes(2)
+			expect(mocks.setDecorations.mock.calls[0]![1]).toHaveLength(1)
+			expect(loggedError).toHaveBeenCalledWith(error)
+		} finally {
+			loggedError.mockRestore()
+		}
 	})
 })

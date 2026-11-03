@@ -10,7 +10,7 @@ import {
 	isTranslationProblem,
 	problemText,
 } from "../utilities/editor/sherlock-editor-app/src/problems/translationProblems.js"
-import type { InlangProject } from "@inlang/sdk"
+import type { BundleNested, InlangProject } from "@inlang/sdk"
 import { previewVariant } from "../utilities/messages/previewVariant.js"
 import { selectBundleById } from "../utilities/project/selectBundleById.js"
 
@@ -49,21 +49,27 @@ export async function contextTooltip(
 	referenceMessage: Awaited<
 		ReturnType<IdeExtensionConfig["messageReferenceMatchers"][number]>
 	>[number],
-	project: InlangProject | undefined = state().project
+	project: InlangProject | undefined = state().project,
+	snapshot?: {
+		bundle: BundleNested | undefined
+		settings: { baseLocale: string; locales: string[] }
+	}
 ) {
 	if (!project) return
 
 	// @ts-ignore TODO: Introduce deprecation message for messageId
 	referenceMessage.bundleId = referenceMessage.bundleId || referenceMessage.messageId
 	// resolve message from id or alias
-	const bundle = await selectBundleById(project, referenceMessage.bundleId)
+	const bundle = snapshot
+		? snapshot.bundle
+		: await selectBundleById(project, referenceMessage.bundleId)
 
 	if (!bundle) {
 		return undefined // Return early if message is not found
 	}
 
 	// Get the configured language tags
-	const settings = await project.settings.get()
+	const settings = snapshot?.settings ?? (await project.settings.get())
 	const configuredLanguageTags = settings?.locales || []
 	const problems = translationProblems({
 		bundle,

@@ -82,6 +82,7 @@ describe("editorView", () => {
 		mocks.receiveMessage = undefined
 		mocks.disposePanel = undefined
 		mocks.changeViewState = undefined
+		vi.mocked(applyEditorChanges).mockReset().mockResolvedValue(true)
 		vi.mocked(saveProject).mockResolvedValue("saved")
 		vi.mocked(selectBundleById).mockResolvedValue({ id: "welcome", messages: [] } as never)
 	})
@@ -526,6 +527,142 @@ describe("editorView", () => {
 		await view.dispose({ persist: true })
 		expect(saveProject).not.toHaveBeenCalled()
 		expect(saveProjectResources).not.toHaveBeenCalled()
+	})
+
+	const patternUpdate = (value: string, entityId = "edited") => ({
+		command: "apply-changes",
+		changes: [
+			{
+				entity: "variant",
+				entityId,
+				newData: { id: entityId, pattern: [{ type: "text", value }] },
+			},
+		],
+		patternEdits: [entityId],
+	})
+
+	function gate() {
+		let release!: () => void
+		const promise = new Promise<void>((resolve) => {
+			release = resolve
+		})
+		return { promise, release }
+	}
+
+	it("coalesces a typing burst into the latest AST per field and waits for the shared batch", async () => {
+		const first = gate()
+		const second = gate()
+		const saved = new Map<string, unknown>()
+		vi.mocked(applyEditorChanges).mockImplementation(async ({ changes }) => {
+			await (vi.mocked(applyEditorChanges).mock.calls.length === 1 ? first.promise : second.promise)
+			for (const change of changes) saved.set(change.entityId, change.newData)
+			return true
+		})
+		const { view } = createTestView()
+		await view.createOrShowPanel()
+		const initial = mocks.receiveMessage!(patternUpdate("initial"))
+		await vi.waitFor(() => expect(applyEditorChanges).toHaveBeenCalledOnce())
+		let completed = 0
+		const typing = Array.from({ length: 20 }, (_, index) =>
+			mocks.receiveMessage!(patternUpdate(`text-${index}`, index % 2 ? "second" : "edited")).then(
+				() => {
+					completed += 1
+				}
+			)
+		)
+		expect(applyEditorChanges).toHaveBeenCalledOnce()
+		first.release()
+		await initial
+		await vi.waitFor(() => expect(applyEditorChanges).toHaveBeenCalledTimes(2))
+		expect(completed).toBe(0)
+		expect(vi.mocked(applyEditorChanges).mock.calls[1]![0].patternEdits).toEqual([
+			"edited",
+			"second",
+		])
+		second.release()
+		await Promise.all(typing)
+		expect(completed).toBe(20)
+		expect(applyEditorChanges).toHaveBeenCalledTimes(2)
+		expect(saved.get("edited")).toMatchObject({ pattern: [{ type: "text", value: "text-18" }] })
+		expect(saved.get("second")).toMatchObject({ pattern: [{ type: "text", value: "text-19" }] })
+		await view.dispose()
+	})
+
+	it.each([
+		{
+			name: "a legacy mutation",
+			message: {
+				command: "change",
+				change: { entity: "variant", entityId: "edited", newData: {} },
+			},
+		},
+		{ name: "a persisted batch", message: { ...patternUpdate("structural"), persist: true } },
+		{
+			name: "a deletion",
+			message: {
+				command: "apply-changes",
+				changes: [{ entity: "variant", entityId: "edited" }],
+				patternEdits: ["edited"],
+			},
+		},
+	])("keeps queued pattern edits on either side of $name in order", async ({ message }) => {
+		const first = gate()
+		const order: string[] = []
+		vi.mocked(applyEditorChanges).mockImplementation(async ({ changes }) => {
+			const value = (changes[0]!.newData as any)?.pattern?.[0]?.value ?? "structural"
+			if (value === "initial") await first.promise
+			order.push(value)
+			return true
+		})
+		vi.mocked(handleUpdateBundle).mockImplementationOnce(async () => {
+			order.push("structural")
+			return true
+		})
+		const { view } = createTestView()
+		await view.createOrShowPanel()
+		const initial = mocks.receiveMessage!(patternUpdate("initial"))
+		await vi.waitFor(() => expect(applyEditorChanges).toHaveBeenCalledOnce())
+		const before = mocks.receiveMessage!(patternUpdate("before"))
+		const structural = mocks.receiveMessage!(message)
+		const after = mocks.receiveMessage!(patternUpdate("after"))
+		first.release()
+		await Promise.all([initial, before, structural, after])
+		expect(order).toEqual(["initial", "before", "structural", "after"])
+		await view.dispose()
+		// The legacy implementation is used only by its corresponding table row.
+		vi.mocked(handleUpdateBundle).mockReset().mockResolvedValue(true)
+	})
+
+	it("waits for the merged batch on blur and keeps later typing beyond that boundary", async () => {
+		const first = gate()
+		const merged = gate()
+		const order: string[] = []
+		vi.mocked(applyEditorChanges).mockImplementation(async ({ changes }) => {
+			const value = (changes[0]!.newData as any).pattern[0].value
+			if (value === "initial") await first.promise
+			if (value === "latest") await merged.promise
+			order.push(value)
+			return true
+		})
+		const { view } = createTestView()
+		await view.createOrShowPanel()
+		const initial = mocks.receiveMessage!(patternUpdate("initial"))
+		await vi.waitFor(() => expect(applyEditorChanges).toHaveBeenCalledOnce())
+		const queued = [
+			mocks.receiveMessage!(patternUpdate("intermediate")),
+			mocks.receiveMessage!(patternUpdate("latest")),
+		]
+		const blur = mocks.receiveMessage!({ command: "persist-edit" })
+		const afterBlur = mocks.receiveMessage!(patternUpdate("after-blur"))
+		first.release()
+		await initial
+		await vi.waitFor(() => expect(applyEditorChanges).toHaveBeenCalledTimes(2))
+		expect(saveProject).not.toHaveBeenCalled()
+		merged.release()
+		await Promise.all([...queued, blur, afterBlur])
+		expect(order).toEqual(["initial", "latest", "after-blur"])
+		expect(saveProject).toHaveBeenCalledOnce()
+		await view.dispose()
 	})
 
 	it("passes native AST edit intent through to the resource mutation", async () => {

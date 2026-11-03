@@ -21,40 +21,53 @@ export async function linterDiagnostics(args: {
 	const linterDiagnosticCollection = vscode.languages.createDiagnosticCollection("inlang-lint")
 	args.subscriptions.push(linterDiagnosticCollection)
 	const eventSubscriptions: vscode.Disposable[] = []
+	let revision = 0
 
 	function updateLintDiagnostics() {
+		const request = ++revision
+		const activeTextEditor = vscode.window.activeTextEditor
+		const isCurrent = () =>
+			request === revision && activeTextEditor === vscode.window.activeTextEditor
 		void (async () => {
 			const result = await args.session.runTask(async () => {
 				const project = args.session.project
-				const activeTextEditor = vscode.window.activeTextEditor
-				if (!activeTextEditor) return
+				if (!activeTextEditor || !isCurrent()) return
 
 				const documentText = activeTextEditor.document.getText()
 				const extensionApi = await getExtensionApi(project)
 
-				if (!extensionApi) return
+				if (!extensionApi || !isCurrent()) return
 
 				// Process messageReferenceMatchers to match bundles
 				const messageReferenceMatchers = extensionApi.messageReferenceMatchers ?? []
 				const activeLintRules = await resolveLintRules(project)
+				if (!isCurrent()) return
+				if (activeLintRules.length === 0) {
+					return { uri: activeTextEditor.document.uri, diagnostics: [] }
+				}
 				const diagnostics: vscode.Diagnostic[] = []
 
 				// Run each matcher on the document text
 				const wrappedLints = messageReferenceMatchers.map(async (matcher) => {
+					if (!isCurrent()) return
 					const bundles = await matcher({ documentText })
 
 					const diagnosticsIndex: Record<string, Record<string, vscode.Diagnostic[]>> = {}
 
 					for (const bundle of bundles) {
+						if (!isCurrent()) return
 						// @ts-ignore TODO: Introduce deprecation message for messageId
 						bundle.bundleId = bundle.bundleId || bundle.messageId
 						// Retrieve the bundle and messages
 						const _bundle = await selectBundleById(project, bundle.bundleId)
 
+						if (!isCurrent()) return
 						if (_bundle) {
 							for (const lintRule of activeLintRules) {
+								if (!isCurrent()) return
 								// @ts-ignore TODO: Introduce deprecation message for messageId
 								const lintResults = await lintRule.ruleFn(bundle.bundleId, project)
+								if (!isCurrent()) return
 
 								for (const result of lintResults) {
 									const diagnosticRange = new vscode.Range(
@@ -100,7 +113,7 @@ export async function linterDiagnostics(args: {
 
 				return { uri: activeTextEditor.document.uri, diagnostics }
 			})
-			if (result.status === "completed" && result.value) {
+			if (result.status === "completed" && result.value && isCurrent()) {
 				linterDiagnosticCollection.set(result.value.uri, result.value.diagnostics)
 			}
 		})().catch(handleError)

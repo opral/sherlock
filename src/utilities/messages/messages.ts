@@ -14,7 +14,6 @@ import {
 import { logger } from "../logger.js"
 import { pollQuery } from "../polling/pollQuery.js"
 import type { Disposable, ProjectSession } from "../project/projectSession.js"
-import { selectBundleById } from "../project/selectBundleById.js"
 
 type MessageProjectSession = ProjectSession<InlangProject>
 
@@ -45,6 +44,7 @@ export function createMessageWebviewProvider(args: {
 	let webviewView: vscode.WebviewView | undefined
 	// Add a flag to prevent event loops
 	let isProcessingUpdate = false
+	let renderRevision = 0
 
 	/**
 	 * Connects the message view to a polling loop for the selected project.
@@ -123,11 +123,10 @@ export function createMessageWebviewProvider(args: {
 			return
 		}
 
-		if (!subscription || subscribedSession !== session) {
-			await subscribeToProjectBundles({ session })
-		} else {
-			throttledUpdateWebviewContent()
-		}
+		// A preceding view disposal may still be queued. Check subscription reuse
+		// inside the same transition queue so reopening cannot reuse a departing view.
+		await subscribeToProjectBundles({ session })
+		if (boundSession === session && bundles !== undefined) throttledUpdateWebviewContent()
 	}
 
 	// Forcefully refresh message data
@@ -199,83 +198,158 @@ export function createMessageWebviewProvider(args: {
 			return
 		}
 
-		const rendered = await session.runTask(async () => {
-			const activeProject = session.project
-			const ideExtension = (await activeProject.plugins.get()).find(
-				(plugin) => plugin?.meta?.["app.inlang.ideExtension"]
-			)?.meta?.["app.inlang.ideExtension"] as IdeExtensionConfig | undefined
-			const messageReferenceMatchers = ideExtension?.messageReferenceMatchers
+		const view = webviewView
+		const revision = ++renderRevision
+		const currentBundles = bundles
+		const loading = isLoading
+		try {
+			const rendered = await session.runTask(async () => {
+				if (loading) return createMessagesLoadingHtml()
+				const activeProject = session.project
+				const ideExtension = (await activeProject.plugins.get()).find(
+					(plugin) => plugin?.meta?.["app.inlang.ideExtension"]
+				)?.meta?.["app.inlang.ideExtension"] as IdeExtensionConfig | undefined
+				const messageReferenceMatchers = ideExtension?.messageReferenceMatchers
+				const settings = await activeProject.settings.get()
 
-			const matchedBundles = (
-				await Promise.all(
-					(messageReferenceMatchers ?? []).map(async (matcher) => {
-						return matcher({ documentText: fileContent })
+				const matchedBundles = (
+					await Promise.all(
+						(messageReferenceMatchers ?? []).map(async (matcher) => {
+							return matcher({ documentText: fileContent })
+						})
+					)
+				).flat()
+
+				// The poll already provides a complete snapshot. Avoid one SQL query per reference.
+				const byId = new Map((currentBundles ?? []).map((bundle) => [bundle.id, bundle]))
+				const referencedIds = new Set(
+					matchedBundles.map((reference) => {
+						// @ts-ignore Legacy matchers can still return messageId.
+						reference.bundleId = reference.bundleId || reference.messageId
+						return reference.bundleId
 					})
 				)
-			).flat()
+				const highlightedBundles = [...referencedIds]
+					.map((id) => byId.get(id))
+					.filter((bundle): bundle is BundleNested => bundle !== undefined)
 
-			const highlightedBundles = await Promise.all(
-				matchedBundles.map(async (bundle) => {
-					// @ts-ignore TODO: Introduce deprecation message for messageId
-					bundle.bundleId = bundle.bundleId || bundle.messageId
-					const bundleData = await selectBundleById(activeProject, bundle.bundleId)
-					return bundleData
-				})
-			)
-
-			const highlightedMessagesHtml =
-				highlightedBundles.length > 0
-					? `<div class="highlighted-section">
+				const highlightedMessagesHtml =
+					highlightedBundles.length > 0
+						? `<div class="highlighted-section">
                         <div class="banner"><span class="active-dot"></span><span>Current file<span></div>
                         ${await Promise.all(
 													highlightedBundles.map(
 														async (bundle) =>
 															await createMessageHtml({
-																bundle: bundle!,
+																bundle,
 																position: matchedBundles.find((m) => m.bundleId === bundle?.id)
 																	?.position,
 																isHighlighted: true,
 																workspaceFolder: args.workspaceFolder,
 																project: activeProject,
+																locales: settings.locales,
+																lazy: true,
 																projectPath: session.path,
 															})
 													)
 												).then((htmls) => htmls.join(""))}
                     </div>`
-					: ""
+						: ""
 
-			const allMessagesBanner = '<div class="banner">All Messages</div>'
-			let mainContentHtml = ""
-			if (isLoading) {
-				mainContentHtml = createMessagesLoadingHtml()
-			} else if (bundles && bundles.length > 0) {
-				mainContentHtml = `${highlightedMessagesHtml}<main>${allMessagesBanner}${await Promise.all(
-					bundles.map(
-						async (message) =>
-							await createMessageHtml({
-								bundle: message,
-								isHighlighted: false,
-								workspaceFolder: args.workspaceFolder,
-								project: activeProject,
-								projectPath: session.path,
-							})
-					)
-				).then((htmls) => htmls.join(""))}</main>`
-			} else {
-				mainContentHtml = `${highlightedMessagesHtml}<main>${
-					allMessagesBanner + createNoMessagesFoundHtml()
-				}</main>`
-			}
+				const allMessagesBanner = '<div class="banner">All Messages</div>'
+				let mainContentHtml = ""
+				if (currentBundles && currentBundles.length > 0) {
+					mainContentHtml = `${highlightedMessagesHtml}<main>${allMessagesBanner}${await Promise.all(
+						currentBundles.map(
+							async (message) =>
+								await createMessageHtml({
+									bundle: message,
+									isHighlighted: false,
+									workspaceFolder: args.workspaceFolder,
+									project: activeProject,
+									locales: settings.locales,
+									lazy: true,
+									projectPath: session.path,
+								})
+						)
+					).then((htmls) => htmls.join(""))}</main>`
+				} else {
+					mainContentHtml = `${highlightedMessagesHtml}<main>${
+						allMessagesBanner + createNoMessagesFoundHtml()
+					}</main>`
+				}
 
-			return mainContentHtml
-		})
-
-		if (rendered.status === "completed" && boundSession === session && webviewView) {
-			webviewView.webview.html = getHtml({
-				mainContent: rendered.value,
-				webview: webviewView.webview,
-				extensionUri: args.extensionUri,
+				return mainContentHtml
 			})
+
+			if (
+				rendered.status === "completed" &&
+				boundSession === session &&
+				webviewView === view &&
+				revision === renderRevision
+			) {
+				view.webview.html = getHtml({
+					mainContent: rendered.value,
+					renderRevision: revision,
+					webview: view.webview,
+					extensionUri: args.extensionUri,
+				})
+			}
+		} catch (error) {
+			logger.error("Unable to render messages", error)
+			if (boundSession === session && webviewView === view && revision === renderRevision) {
+				view.webview.html = getHtml({
+					mainContent:
+						"<main><p>Unable to load messages.</p><button onclick=\"vscode.postMessage({command: 'retryMessages'})\">Retry</button></main>",
+					renderRevision: revision,
+					webview: view.webview,
+					extensionUri: args.extensionUri,
+				})
+			}
+		}
+	}
+
+	const expandMessage = async (
+		view: vscode.WebviewView,
+		message: { bundleId: string; revision: number }
+	) => {
+		const session = boundSession
+		const revision = renderRevision
+		if (!session || webviewView !== view || message.revision !== revision) return
+		const bundle = bundles?.find((item) => item.id === message.bundleId)
+		if (!bundle) return
+		try {
+			const result = await session.runTask(async () =>
+				getTranslationsTableHtml({
+					bundle,
+					workspaceFolder: args.workspaceFolder,
+					project: session.project,
+					locales: (await session.project.settings.get()).locales,
+				})
+			)
+			if (
+				result.status === "completed" &&
+				boundSession === session &&
+				webviewView === view &&
+				renderRevision === revision
+			) {
+				await view.webview.postMessage({
+					command: "messageDetails",
+					bundleId: bundle.id,
+					revision,
+					html: result.value,
+				})
+			}
+		} catch (error) {
+			logger.error("Unable to load message translations", error)
+			if (boundSession === session && webviewView === view && renderRevision === revision) {
+				await view.webview.postMessage({
+					command: "messageDetails",
+					bundleId: bundle.id,
+					revision,
+					error: true,
+				})
+			}
 		}
 	}
 
@@ -283,7 +357,8 @@ export function createMessageWebviewProvider(args: {
 
 	const controller: MessageViewController = {
 		bindProject(session) {
-			throttledUpdateWebviewContent.cancel()
+			renderRevision++
+			throttledUpdateWebviewContent.cancel({ upcomingOnly: true })
 			boundSession = session
 			return {
 				dispose: async () => {
@@ -313,10 +388,13 @@ export function createMessageWebviewProvider(args: {
 				if (viewDisposed) return
 				viewDisposed = true
 				const ownsCurrentView = webviewView === view
-				if (ownsCurrentView) webviewView = undefined
+				if (ownsCurrentView) {
+					webviewView = undefined
+					renderRevision++
+				}
 				for (const disposable of viewDisposables) disposable.dispose()
 				if (!ownsCurrentView) return
-				throttledUpdateWebviewContent.cancel()
+				throttledUpdateWebviewContent.cancel({ upcomingOnly: true })
 				if (debounceTimer) clearTimeout(debounceTimer)
 				void queueSubscriptionTransition(async () => {
 					const currentSubscription = subscription
@@ -337,7 +415,11 @@ export function createMessageWebviewProvider(args: {
 
 			view.webview.onDidReceiveMessage(
 				(message) => {
-					if (message.command === "executeCommand") {
+					if (message.command === "expandMessage") {
+						void expandMessage(view, message)
+					} else if (message.command === "retryMessages") {
+						void updateWebviewContent()
+					} else if (message.command === "executeCommand") {
 						const commandName = message.commandName
 						const commandArgs = message.commandArgs
 
@@ -389,12 +471,42 @@ export async function createMessageHtml(args: {
 	workspaceFolder: vscode.WorkspaceFolder
 	project?: InlangProject
 	projectPath?: string
+	locales?: readonly string[]
+	lazy?: boolean
 }): Promise<string> {
-	const translationsTableHtml = await getTranslationsTableHtml({
-		bundle: args.bundle,
-		workspaceFolder: args.workspaceFolder,
-		project: args.project,
-	})
+	const configuredLocales =
+		args.locales ??
+		(args.lazy
+			? ((await (args.project ?? getSafeState()?.project)?.settings.get())?.locales ?? [])
+			: undefined)
+	const translationsTableHtml = args.lazy
+		? "Loading translations..."
+		: await getTranslationsTableHtml({
+				bundle: args.bundle,
+				workspaceFolder: args.workspaceFolder,
+				project: args.project,
+				locales: configuredLocales,
+			})
+	let searchText = args.bundle.messages
+		.filter((message) => !configuredLocales || configuredLocales.includes(message.locale))
+		.flatMap((message) =>
+			message.variants.map((variant) =>
+				getStringFromPattern({
+					pattern: variant.pattern,
+					locale: message.locale,
+					messageId: message.id,
+				})
+			)
+		)
+		.join(" ")
+
+	if (
+		configuredLocales?.some(
+			(locale) => !args.bundle.messages.some((message) => message.locale === locale)
+		)
+	) {
+		searchText += ` ${CONFIGURATION.STRINGS.MISSING_TRANSLATION_MESSAGE}`
+	}
 
 	// Find the relative path from the workspace/git root
 	const selectedProjectPath = args.projectPath ?? getSafeState()?.selectedProjectPath ?? ""
@@ -411,7 +523,7 @@ export async function createMessageHtml(args: {
 	const openCommand = `openInFink('${args.bundle.id}', '${relativeProjectPathFromWorkspace}');event.stopPropagation();`
 
 	return `
-    <div class="tree-item">
+    <div class="tree-item" data-search-text="${escapeHtml(searchText)}">
         <div class="collapsible" data-message-id="${args.bundle.id}">
             <div class="messageId">
 			 	<span class="chevron codicon codicon-chevron-right"></span>
@@ -428,7 +540,7 @@ export async function createMessageHtml(args: {
                 <!--<span title="Open in Fink" onclick="${openCommand}"><span class="codicon codicon-link-external"></span></span>-->
             </div>
         </div>
-        <div class="content" style="display: none;">
+        <div class="content" data-bundle-id="${escapeHtml(args.bundle.id)}" data-loaded="${!args.lazy}" style="display: none;">
             ${translationsTableHtml}
         </div>
     </div>
@@ -449,6 +561,7 @@ export function createMessagesLoadingHtml(): string {
 
 export function getHtml(args: {
 	mainContent: string
+	renderRevision?: number
 	webview: vscode.Webview
 	extensionUri: vscode.Uri
 }): string {
@@ -482,6 +595,34 @@ export function getHtml(args: {
 				let collapsibles = [];
 				let copyButtons = [];
 				const vscode = acquireVsCodeApi();
+				const renderRevision = ${args.renderRevision ?? 0};
+				const pendingDetails = new Set();
+				const detailsQueue = [];
+				let loadingDetails;
+				function loadNextDetails() {
+					if (loadingDetails || !detailsQueue.length) return;
+					loadingDetails = detailsQueue.shift();
+					vscode.postMessage({ command: 'expandMessage', bundleId: loadingDetails, revision: renderRevision });
+				}
+				function requestDetails(content) {
+					const bundleId = content.getAttribute('data-bundle-id');
+					if (content.getAttribute('data-loaded') !== 'false' || pendingDetails.has(bundleId)) return;
+					pendingDetails.add(bundleId);
+					detailsQueue.push(bundleId);
+					loadNextDetails();
+				}
+				window.addEventListener('message', (event) => {
+					const message = event.data;
+					if (message.command !== 'messageDetails' || message.revision !== renderRevision || !pendingDetails.has(message.bundleId)) return;
+					document.querySelectorAll('.content[data-bundle-id]').forEach(content => {
+						if (content.getAttribute('data-bundle-id') !== message.bundleId) return;
+						if (message.error) content.textContent = 'Unable to load translations. Collapse and expand to retry.';
+						else { content.innerHTML = message.html; content.setAttribute('data-loaded', 'true'); }
+					});
+					pendingDetails.delete(message.bundleId);
+					loadingDetails = undefined;
+					loadNextDetails();
+				});
 			
 				document.addEventListener('DOMContentLoaded', () => {
 					collapsibles = document.querySelectorAll('.collapsible');
@@ -504,6 +645,7 @@ export function getHtml(args: {
 							const isActive = storedState === 'true';
 							collapsible.classList.toggle('active', isActive);
 							content.style.display = isActive ? 'block' : 'none';
+							if (isActive) requestDetails(content);
 						} else {
 							// Ensure default state is correctly set
 							content.style.display = 'none';
@@ -514,6 +656,7 @@ export function getHtml(args: {
 							const isExpanded = content.style.display === 'block';
 							content.style.display = isExpanded ? 'none' : 'block';
 							localStorage.setItem(storageKey, !isExpanded);
+							if (!isExpanded) requestDetails(content);
 						});
 					});
 				}
@@ -545,11 +688,7 @@ export function getHtml(args: {
 				function filterItems(searchTerm) {
 					document.querySelectorAll('.tree-item').forEach(item => {
 						const messageId = item.querySelector('.collapsible').textContent.toLowerCase();
-						const messageButtons = item.querySelectorAll('.message button');
-						let translationsText = '';
-						messageButtons.forEach(button => {
-							translationsText += button.textContent.toLowerCase() + ' ';
-						});
+						const translationsText = (item.getAttribute('data-search-text') || '').toLowerCase();
 
 						// Use the data-alias attribute for search
 						const aliases = item.querySelectorAll('.aliases [data-alias]');
@@ -598,15 +737,15 @@ export async function getTranslationsTableHtml(args: {
 	bundle: BundleNested
 	workspaceFolder: vscode.WorkspaceFolder
 	project?: InlangProject
+	locales?: readonly string[]
 }): Promise<string> {
 	const activeProject = args.project ?? getSafeState()?.project
-	if (!activeProject) {
+	if (!activeProject && !args.locales) {
 		logger.warn("Unable to render translations table because project is undefined")
 		return '<div class="section"><span class="message">Project is still loading...</span></div>'
 	}
 
-	const settings = await activeProject.settings.get()
-	const configuredLocales = settings.locales
+	const configuredLocales = args.locales ?? (await activeProject!.settings.get()).locales
 	const contextTableRows = configuredLocales.flatMap((locale) => {
 		const message = args.bundle.messages.find((m) => m.locale === locale)
 
