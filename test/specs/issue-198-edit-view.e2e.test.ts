@@ -100,18 +100,12 @@ describe("Issue #198: edit view fields accept normal text edits", () => {
 		const missingWebview = await workbench.getWebviewByTitle("missing_in_german")
 		await missingWebview.open()
 
-		const addGermanMessage = await $("p=Add de")
-		await addGermanMessage.waitForDisplayed({ timeout: 30_000 })
-		await addGermanMessage.click()
-
-		await browser.waitUntil(async () => (await $$("inlang-pattern-editor")).length === 2, {
-			timeout: 10_000,
-			timeoutMsg: "Expected adding German to render a second pattern editor",
-		})
-
-		const editors = await $$("inlang-pattern-editor .inlang-pattern-editor-contenteditable")
-		const germanEditor = editors[1]
-		expect(germanEditor).toBeDefined()
+		// Missing locales render an empty draft field immediately.
+		const germanEditor = await $(
+			'section[data-locale="de"] inlang-pattern-editor .inlang-pattern-editor-contenteditable'
+		)
+		await germanEditor.waitForDisplayed({ timeout: 30_000 })
+		await expect(germanEditor).toHaveText("")
 		await germanEditor.click()
 		await browser.keys("Deutschx")
 		await browser.keys("Backspace")
