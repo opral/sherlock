@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react"
 import {
 	InlangMessageForms,
+	InlangBundleDescription,
 	InlangPatternEditor,
 	type AddVariantEventDetail,
 	type ChangeEventDetail,
@@ -134,4 +135,34 @@ export function MessageForms({
 	}, [message, declarations, referenceVariants, selectedVariantId])
 
 	return <div ref={host} className="forms" />
+}
+
+/** One shared description for the bundle, independent of the locale rows. */
+export function BundleDescription({
+	bundle,
+	onChange,
+}: {
+	bundle: import("@inlang/sdk").BundleNested
+	onChange: (description: string | null) => void
+}) {
+	const host = useRef<HTMLDivElement>(null)
+	const control = useRef<InlangBundleDescription>(undefined)
+	const callback = useRef(onChange)
+	callback.current = onChange
+	useLayoutEffect(() => {
+		const element = new InlangBundleDescription()
+		element.addEventListener("change", (event) => {
+			const detail = (event as CustomEvent<import("@inlang/editor-component").ChangeEventDetail>)
+				.detail
+			if (detail?.entity === "bundle" && detail.newData)
+				callback.current((detail.newData as import("@inlang/sdk").BundleRow).description ?? null)
+		})
+		host.current!.append(element)
+		control.current = element
+		return () => element.remove()
+	}, [])
+	useLayoutEffect(() => {
+		control.current!.bundle = bundle
+	}, [bundle])
+	return <div ref={host} className="bundle-context" />
 }

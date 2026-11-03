@@ -129,3 +129,12 @@ describe("hover problems", () => {
 		expect(selectBundleById).not.toHaveBeenCalled()
 	})
 })
+
+it("shows bundle descriptions as escaped text in trusted hovers", async () => {
+	const tooltip = await contextTooltip({ bundleId: "cart" } as any, {} as any, {
+		bundle: { ...bundle, description: "<script>alert(1)</script>\nShopping CTA" },
+		settings: { baseLocale: "en", locales: ["en", "ru"] },
+	})
+	expect(tooltip?.value).toContain("&lt;script&gt;alert(1)&lt;/script&gt;<br>Shopping CTA")
+	expect(tooltip?.value).not.toContain("<script>")
+})

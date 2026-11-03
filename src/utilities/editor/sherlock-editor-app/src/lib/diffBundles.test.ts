@@ -63,3 +63,17 @@ describe("diffBundles", () => {
 		])
 	})
 })
+
+it("sends a bundle row for description-only edits and explicit clearing", () => {
+	const described = { ...bundle, description: "Greeting shown after login" }
+	expect(diffBundles(bundle, described)).toEqual([
+		{
+			entity: "bundle",
+			entityId: bundle.id,
+			newData: { id: bundle.id, declarations: [], description: described.description },
+		},
+	])
+	expect(diffBundles(described, { ...bundle, description: null })[0]!.newData).toMatchObject({
+		description: null,
+	})
+})
