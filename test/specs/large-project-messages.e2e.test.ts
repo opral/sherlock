@@ -1,5 +1,6 @@
 // Stress run: SHERLOCK_LARGE_KEYS=10000 SHERLOCK_LARGE_NAMESPACES=35 SHERLOCK_LARGE_REFERENCES=611
 // ./node_modules/.bin/wdio run test/wdio.conf.ts --spec test/specs/large-project-messages.e2e.test.ts
+// SHERLOCK_LARGE_RELOAD=0 isolates load/search/save when diagnosing reload failures.
 import { browser, expect } from "@wdio/globals"
 import fs from "node:fs/promises"
 import path from "node:path"
@@ -15,6 +16,7 @@ const settingsPath = path.join(workspacePath, "project.inlang/settings.json")
 const sourcePath = path.join(workspacePath, "src/large-project.js")
 const translationsPath = path.join(workspacePath, "large-translations")
 const keys = Number(process.env.SHERLOCK_LARGE_KEYS ?? 611)
+const reloadAfterSave = process.env.SHERLOCK_LARGE_RELOAD !== "0"
 const namespaceCount = Math.min(Number(process.env.SHERLOCK_LARGE_NAMESPACES ?? 1), keys)
 const referenceCount = Math.min(keys, Number(process.env.SHERLOCK_LARGE_REFERENCES ?? 150))
 const locales = [
@@ -92,6 +94,10 @@ async function waitForMessages(expectedHighlights?: number) {
 describe("Large i18next projects (#246)", () => {
 	let fixture: Awaited<ReturnType<typeof snapshotWorkspacePaths>>
 	before(async () => {
+		// Settle the initial workspace before replacing its resource configuration.
+		await browser.executeWorkbench(async (api: typeof vscode) => {
+			await api.extensions.getExtension("inlang.vs-code-extension")?.activate()
+		})
 		fixture = await snapshotWorkspacePaths([settingsPath, sourcePath, translationsPath])
 		for (const locale of locales) {
 			await fs.mkdir(path.join(translationsPath, locale), { recursive: true })
@@ -220,7 +226,7 @@ describe("Large i18next projects (#246)", () => {
 		}
 	})
 
-	it("saves a translation without losing other keys or locales, then reloads", async () => {
+	it(`saves a translation without losing other keys or locales${reloadAfterSave ? ", then reloads" : ""}`, async () => {
 		const editor = await openEditorBundle(idOf(0))
 		const value = "Updated large project translation {name}"
 		try {
@@ -244,10 +250,37 @@ describe("Large i18next projects (#246)", () => {
 		expect(total).toBe(keys)
 		const otherLocale = JSON.parse(await fs.readFile(resourcePath("en-GB", namespaceOf(0)), "utf8"))
 		expect(otherLocale[keyOf(0)]).toBe("en-GB translation 0 for {{name}}")
-		await browser.executeWorkbench(async (api: typeof vscode) => {
-			await api.commands.executeCommand("sherlock.reloadProject")
-			await api.commands.executeCommand("messageView.focus")
-		})
-		await waitForMessages()
+		if (reloadAfterSave) {
+			const reload = await browser.executeWorkbench(async (api: typeof vscode) => {
+				try {
+					return { result: await api.commands.executeCommand<string>("sherlock.reloadProject") }
+				} catch (error) {
+					return { error: String(error), stack: (error as Error).stack }
+				}
+			})
+			expect(reload).toEqual({ result: "committed" })
+			await waitForMessages()
+			const view = await (await browser.getWorkbench()).getWebviewByTitle("Inlang Message View")
+			await view.open()
+			try {
+				const header = await $(`main .collapsible[data-message-id="${idOf(0)}"]`)
+				await header.click()
+				await browser.waitUntil(
+					async () =>
+						await browser.execute(
+							(id: string) =>
+								[...document.querySelectorAll<HTMLElement>("main .collapsible")]
+									.find((item) => item.dataset.messageId === id)
+									?.nextElementSibling?.textContent?.includes(
+										"Updated large project translation"
+									) ?? false,
+							idOf(0)
+						),
+					{ timeout: 10_000, interval: 250 }
+				)
+			} finally {
+				await view.close()
+			}
+		}
 	})
 })
