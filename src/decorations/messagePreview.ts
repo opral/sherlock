@@ -17,6 +17,7 @@ import {
 import { handleError } from "../utilities/utils.js"
 
 const MAXIMUM_PREVIEW_LENGTH = 40
+const PREVIEW_CONCURRENCY = 8
 
 export function messagePreview(args: {
 	subscriptions: Disposable[]
@@ -29,145 +30,172 @@ export function messagePreview(args: {
 		args.subscriptions.push(...eventSubscriptions.splice(0).map(deactivateBeforeClose))
 	}
 
+	let updateInFlight = false
+	let updatePending = false
 	function updateDecorations() {
+		updatePending = true
+		if (updateInFlight) return
+		updateInFlight = true
 		void (async () => {
-			const result = await args.session.runTask(async () => {
-				const project = args.session.project
-				const activeTextEditor = vscode.window.activeTextEditor
-				const inlineAnnotationsEnabled = vscode.workspace
-					.getConfiguration()
-					.get<boolean>("sherlock.inlineAnnotations.enabled", true)
-
-				if (!activeTextEditor) {
-					return
-				}
-
-				// TODO: this is a hack to prevent the message preview from showing up in the project.inlang/settings file
-				if (activeTextEditor.document.fileName.includes("project.inlang")) {
-					return { activeTextEditor, decorations: [] }
-				}
-
-				// Get the reference language
-				const baseLocale = (await project.settings.get()).baseLocale
-				const extensionApi = await getExtensionApi(project)
-
-				if (!extensionApi) return
-
-				if (baseLocale === undefined || extensionApi.messageReferenceMatchers === undefined) {
-					// don't show an error message. See issue:
-					// https://github.com/opral/monorepo/issues/927
-					return
-				}
-
-				const editorInfoColors = {
-					foreground: await getSetting("editorColors.info.foreground").catch(
-						() => new vscode.ThemeColor("editorInfo.foreground")
-					),
-					background: await getSetting("editorColors.info.background").catch(
-						() => new vscode.ThemeColor("editorInfo.background")
-					),
-					border: await getSetting("editorColors.info.border").catch(
-						() => new vscode.ThemeColor("editorInfo.border")
-					),
-				}
-				const editorErrorColors = {
-					foreground: await getSetting("editorColors.error.foreground").catch(
-						() => new vscode.ThemeColor("editorError.foreground")
-					),
-					background: await getSetting("editorColors.error.background").catch(
-						() => new vscode.ThemeColor("editorError.background")
-					),
-					border: await getSetting("editorColors.error.border").catch(
-						() => new vscode.ThemeColor("editorError.border")
-					),
-				}
-
-				// Get the message references
-				const wrappedDecorations = (extensionApi.messageReferenceMatchers ?? []).map(
-					async (matcher) => {
-						const bundles = await matcher({
-							documentText: activeTextEditor.document.getText(),
-						})
-
-						return bundles.map(async (bundle) => {
-							// @ts-ignore TODO: Introduce deprecation message for messageId
-							bundle.bundleId = bundle.bundleId || bundle.messageId
-							// Retrieve the bundle and messages
-							const _bundle = await selectBundleById(project, bundle.bundleId)
-
-							const previewLocale = await getPreviewLocale(project)
-							const translationLocale = previewLocale?.length ? previewLocale : baseLocale
-
-							// Get the message from the bundle
-							const message = _bundle?.messages.find((m) => m.locale === translationLocale)
-
-							const variant = previewVariant(message?.variants)
-
-							const translationString = variant
-								? getStringFromPattern({
-										pattern: variant.pattern || [
-											{
-												type: "text",
-												value: "", // TODO: Fix pattern type to be always defined either/or Text / VariableReference
-											},
-										],
-										locale: translationLocale,
-										messageId: variant.message_id,
-									})
-								: ""
-
-							const translation = resolveEscapedCharacters(translationString)
-
-							const truncatedTranslation =
-								translation &&
-								(translation.length > (MAXIMUM_PREVIEW_LENGTH || 0)
-									? `${translation.slice(0, MAXIMUM_PREVIEW_LENGTH)}...`
-									: translation)
-
-							const range = new vscode.Range(
-								new vscode.Position(
-									bundle.position.start.line - 1,
-									bundle.position.start.character - 1
-								),
-								new vscode.Position(bundle.position.end.line - 1, bundle.position.end.character - 1)
-							)
-
-							const decoration: vscode.DecorationOptions = {
-								range,
-								renderOptions: inlineAnnotationsEnabled
-									? {
-											after: {
-												margin: "0 0.5rem",
-												contentText:
-													truncatedTranslation === "" || truncatedTranslation === undefined
-														? `ERROR: '${bundle.bundleId}' not found in source with language tag '${baseLocale}'`
-														: translation,
-												backgroundColor: translation
-													? editorInfoColors.background
-													: editorErrorColors.background,
-												color: translation
-													? editorInfoColors.foreground
-													: editorErrorColors.foreground,
-												border: `1px solid ${
-													translation ? editorInfoColors.border : editorErrorColors.border
-												}`,
-											},
-										}
-									: undefined,
-								hoverMessage: await contextTooltip(bundle, project),
-							}
-							return decoration
-						})
+			try {
+				do {
+					updatePending = false
+					try {
+						await updateDecorationsOnce()
+					} catch (error) {
+						handleError(error)
 					}
-				)
-				const decorations = (await Promise.all(wrappedDecorations || [])).flat()
-				const unwrappedDecorations = await Promise.all(decorations)
-				return { activeTextEditor, decorations: unwrappedDecorations }
-			})
-			if (result.status === "completed" && result.value) {
-				result.value.activeTextEditor.setDecorations(messagePreview, result.value.decorations)
+				} while (updatePending)
+			} finally {
+				updateInFlight = false
 			}
 		})().catch(handleError)
+	}
+
+	async function updateDecorationsOnce() {
+		const result = await args.session.runTask(async () => {
+			const project = args.session.project
+			const activeTextEditor = vscode.window.activeTextEditor
+			const inlineAnnotationsEnabled = vscode.workspace
+				.getConfiguration()
+				.get<boolean>("sherlock.inlineAnnotations.enabled", true)
+
+			if (!activeTextEditor) {
+				return
+			}
+
+			// TODO: this is a hack to prevent the message preview from showing up in the project.inlang/settings file
+			if (activeTextEditor.document.fileName.includes("project.inlang")) {
+				return { activeTextEditor, decorations: [] }
+			}
+
+			const documentText = activeTextEditor.document.getText()
+
+			// Get the reference language
+			const settings = await project.settings.get()
+			const baseLocale = settings.baseLocale
+			const extensionApi = await getExtensionApi(project)
+
+			if (!extensionApi) return
+
+			if (baseLocale === undefined || extensionApi.messageReferenceMatchers === undefined) {
+				// don't show an error message. See issue:
+				// https://github.com/opral/monorepo/issues/927
+				return
+			}
+
+			const editorInfoColors = {
+				foreground: await getSetting("editorColors.info.foreground").catch(
+					() => new vscode.ThemeColor("editorInfo.foreground")
+				),
+				background: await getSetting("editorColors.info.background").catch(
+					() => new vscode.ThemeColor("editorInfo.background")
+				),
+				border: await getSetting("editorColors.info.border").catch(
+					() => new vscode.ThemeColor("editorInfo.border")
+				),
+			}
+			const editorErrorColors = {
+				foreground: await getSetting("editorColors.error.foreground").catch(
+					() => new vscode.ThemeColor("editorError.foreground")
+				),
+				background: await getSetting("editorColors.error.background").catch(
+					() => new vscode.ThemeColor("editorError.background")
+				),
+				border: await getSetting("editorColors.error.border").catch(
+					() => new vscode.ThemeColor("editorError.border")
+				),
+			}
+
+			// Resolve shared settings once, then bound database work across all matchers.
+			const previewLocale = await getPreviewLocale(project)
+			const translationLocale = previewLocale?.length ? previewLocale : baseLocale
+			const references = (
+				await Promise.all(
+					(extensionApi.messageReferenceMatchers ?? []).map((matcher) => matcher({ documentText }))
+				)
+			).flat()
+			const decorations: vscode.DecorationOptions[] = []
+			for (let offset = 0; offset < references.length; offset += PREVIEW_CONCURRENCY) {
+				if (updatePending) return
+				const batch = await Promise.allSettled(
+					references.slice(offset, offset + PREVIEW_CONCURRENCY).map(async (bundle) => {
+						// @ts-ignore TODO: Introduce deprecation message for messageId
+						bundle.bundleId = bundle.bundleId || bundle.messageId
+						// Retrieve the bundle and messages
+						const _bundle = await selectBundleById(project, bundle.bundleId)
+
+						// Get the message from the bundle
+						const message = _bundle?.messages.find((m) => m.locale === translationLocale)
+
+						const variant = previewVariant(message?.variants)
+
+						const translationString = variant
+							? getStringFromPattern({
+									pattern: variant.pattern || [
+										{
+											type: "text",
+											value: "", // TODO: Fix pattern type to be always defined either/or Text / VariableReference
+										},
+									],
+									locale: translationLocale,
+									messageId: variant.message_id,
+								})
+							: ""
+
+						const translation = resolveEscapedCharacters(translationString)
+
+						const truncatedTranslation =
+							translation &&
+							(translation.length > (MAXIMUM_PREVIEW_LENGTH || 0)
+								? `${translation.slice(0, MAXIMUM_PREVIEW_LENGTH)}...`
+								: translation)
+
+						const range = new vscode.Range(
+							new vscode.Position(
+								bundle.position.start.line - 1,
+								bundle.position.start.character - 1
+							),
+							new vscode.Position(bundle.position.end.line - 1, bundle.position.end.character - 1)
+						)
+
+						const decoration: vscode.DecorationOptions = {
+							range,
+							renderOptions: inlineAnnotationsEnabled
+								? {
+										after: {
+											margin: "0 0.5rem",
+											contentText:
+												truncatedTranslation === "" || truncatedTranslation === undefined
+													? `ERROR: '${bundle.bundleId}' not found in source with language tag '${baseLocale}'`
+													: translation,
+											backgroundColor: translation
+												? editorInfoColors.background
+												: editorErrorColors.background,
+											color: translation
+												? editorInfoColors.foreground
+												: editorErrorColors.foreground,
+											border: `1px solid ${
+												translation ? editorInfoColors.border : editorErrorColors.border
+											}`,
+										},
+									}
+								: undefined,
+							hoverMessage: await contextTooltip(bundle, project, { bundle: _bundle, settings }),
+						}
+						return decoration
+					})
+				)
+				for (const result of batch) {
+					if (result.status === "rejected") throw result.reason
+					decorations.push(result.value)
+				}
+			}
+			return { activeTextEditor, decorations }
+		})
+		if (result.status === "completed" && result.value && !updatePending) {
+			result.value.activeTextEditor.setDecorations(messagePreview, result.value.decorations)
+		}
 	}
 
 	// immediately update decorations when the active text editor changes

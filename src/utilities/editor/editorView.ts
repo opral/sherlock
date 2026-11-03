@@ -48,6 +48,13 @@ export function editorView(args: {
 	let disposables: Disposable[] = []
 	let bundleId = initialBundleId
 	let pendingUpdate = Promise.resolve()
+	type PatternBatch = {
+		bundleId: string
+		changes: Map<string, ChangeEventDetail>
+		patternEdits: Set<string>
+		completion: Promise<boolean>
+	}
+	let pendingPatternBatch: PatternBatch | undefined
 	let editRevision = 0
 	let persistedRevision = 0
 	let pendingPersistence = Promise.resolve()
@@ -185,14 +192,7 @@ export function editorView(args: {
 						const targetBundleId = bundleId
 						try {
 							if (!Array.isArray(message.changes)) throw new Error("No editor changes provided")
-							const changed = await queueMutation(() =>
-								applyEditorChanges({
-									project: lease.project,
-									bundleId: targetBundleId,
-									changes: message.changes,
-									patternEdits: message.patternEdits,
-								})
-							)
+							const changed = await queueEditorChanges(targetBundleId, message)
 							if (!changed) await refreshView({ reset: true })
 							else if (message.persist === true) await updateView()
 						} catch (error) {
@@ -233,6 +233,8 @@ export function editorView(args: {
 	}
 
 	function queueMutation(mutation: () => Promise<unknown>) {
+		// A structural edit must stay between the pattern edits that surround it.
+		pendingPatternBatch = undefined
 		viewRevision += 1
 		const previousUpdate = pendingUpdate
 		const execution = lease.runTask(async () => {
@@ -248,6 +250,60 @@ export function editorView(args: {
 			() => undefined
 		)
 		return execution.then((result) => result.status === "completed" && result.value)
+	}
+
+	function queueEditorChanges(
+		targetBundleId: string,
+		message: { changes: ChangeEventDetail[]; patternEdits?: string[]; persist?: boolean }
+	) {
+		const canMerge =
+			message.persist !== true &&
+			Array.isArray(message.patternEdits) &&
+			message.patternEdits.length > 0 &&
+			message.changes.length > 0 &&
+			message.changes.every((change) => change.newData)
+		if (!canMerge) {
+			return queueMutation(() =>
+				applyEditorChanges({
+					project: lease.project,
+					bundleId: targetBundleId,
+					changes: message.changes,
+					patternEdits: message.patternEdits,
+				})
+			)
+		}
+
+		let batch = pendingPatternBatch
+		if (batch?.bundleId === targetBundleId) {
+			viewRevision += 1
+		} else {
+			batch = {
+				bundleId: targetBundleId,
+				changes: new Map(),
+				patternEdits: new Set(),
+				completion: Promise.resolve(false),
+			}
+			const queued = batch
+			queued.completion = queueMutation(async () => {
+				// Once a batch starts, new keystrokes belong to the next batch.
+				if (pendingPatternBatch === queued) pendingPatternBatch = undefined
+				return applyEditorChanges({
+					project: lease.project,
+					bundleId: queued.bundleId,
+					changes: [...queued.changes.values()],
+					patternEdits: [...queued.patternEdits],
+				})
+			}).finally(() => {
+				if (pendingPatternBatch === queued) pendingPatternBatch = undefined
+			})
+			pendingPatternBatch = queued
+		}
+		// Each field sends its full row. Keep its latest AST while the DB is busy.
+		for (const change of message.changes) {
+			batch.changes.set(JSON.stringify([change.entity, change.entityId]), change)
+		}
+		for (const id of message.patternEdits!) batch.patternEdits.add(id)
+		return batch.completion
 	}
 
 	function queueUpdate(message: UpdateBundleMessage) {
@@ -324,6 +380,7 @@ export function editorView(args: {
 	}
 
 	async function persistEdit() {
+		pendingPatternBatch = undefined
 		await pendingUpdate
 		if (!lease.isCurrent() || editRevision <= persistedRevision) return
 
@@ -406,6 +463,7 @@ export function editorView(args: {
 	 * Let external code update the bundleId if desired
 	 */
 	function setBundleId(newBundleId: string) {
+		pendingPatternBatch = undefined
 		bundleId = newBundleId
 		viewRevision += 1
 	}
@@ -420,6 +478,7 @@ export function editorView(args: {
 	async function dispose(options: { persist?: boolean } = {}) {
 		if (disposed) return
 		disposed = true
+		pendingPatternBatch = undefined
 		try {
 			await pendingUpdate
 			await pendingPersistence

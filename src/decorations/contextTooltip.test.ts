@@ -107,4 +107,25 @@ describe("hover problems", () => {
 			"$(warning) Missing {count} · Unknown {cnt} – did you mean {count}?"
 		)
 	})
+
+	it("uses the preview's bundle and settings snapshot without additional queries", async () => {
+		selectBundleById.mockClear()
+		const getSettings = vi.fn()
+		const project = { settings: { get: getSettings } }
+		const settings = { baseLocale: "en", locales: ["en", "ru"] }
+		const tooltip = await contextTooltip({ bundleId: "cart" } as any, project as any, {
+			bundle,
+			settings,
+		})
+		expect(tooltip?.value).toContain("Missing {count}")
+		expect(selectBundleById).not.toHaveBeenCalled()
+		expect(getSettings).not.toHaveBeenCalled()
+		expect(
+			await contextTooltip({ bundleId: "missing" } as any, project as any, {
+				bundle: undefined,
+				settings,
+			})
+		).toBeUndefined()
+		expect(selectBundleById).not.toHaveBeenCalled()
+	})
 })

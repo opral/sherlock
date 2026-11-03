@@ -259,6 +259,19 @@ describe("Message Webview Provider Tests", () => {
 		expect(html).toContain("[missing]") // Missing German translation
 	})
 
+	it("keeps missing translations searchable before their details are expanded", async () => {
+		const html = await createMessageHtml({
+			bundle: { id: "missing", declarations: [], messages: [] },
+			isHighlighted: false,
+			locales: ["en", "de"],
+			lazy: true,
+			projectPath: "/workspace/project.inlang",
+			workspaceFolder: { uri: { fsPath: "/workspace" } } as vscode.WorkspaceFolder,
+		})
+		expect(html).toContain('data-search-text=" [missing]"')
+		expect(html).not.toContain('<div class="table">')
+	})
+
 	it("should create 'No Messages Found' HTML", () => {
 		// Creating HTML for when no messages are found
 		const html = createNoMessagesFoundHtml()
@@ -275,56 +288,324 @@ describe("Message Webview Provider Tests", () => {
 		expect(html).toContain("Loading messages...")
 	})
 
-	it("selects an exact highlighted bundle through the shared exact-ID operation", async () => {
-		const bundle = { id: "welcome", declarations: [], messages: [] }
-		vi.mocked(selectBundleById).mockResolvedValue(bundle as never)
-		const project = {
-			db: {},
-			plugins: {
-				get: vi.fn(async () => [
+	it("indexes all configured translations without eagerly rendering hidden locale tables", async () => {
+		const locales = Array.from({ length: 13 }, (_, i) => `locale-${i}`)
+		const messageBundle = {
+			id: "searchable",
+			declarations: [],
+			messages: locales.map((locale, index) => ({
+				id: locale,
+				bundle_id: "searchable",
+				locale,
+				selectors: [],
+				variants: [
 					{
-						meta: {
-							"app.inlang.ideExtension": {
-								messageReferenceMatchers: [vi.fn(async () => [{ bundleId: "welcome" }])],
+						id: `v-${index}`,
+						message_id: locale,
+						matches: [],
+						pattern: [
+							{
+								type: "text",
+								value: index === 12 ? 'Last "quoted" <needle>' : `Translation in ${locale}`,
 							},
+						],
+					},
+				],
+			})),
+		}
+		const args = {
+			bundle: messageBundle,
+			locales,
+			workspaceFolder: { uri: { fsPath: "/workspace" } } as vscode.WorkspaceFolder,
+			projectPath: "/workspace/project.inlang",
+			isHighlighted: false,
+		}
+		const eager = await createMessageHtml(args as never)
+		const lazy = await createMessageHtml({ ...args, lazy: true } as never)
+		expect(lazy).toContain('data-loaded="false"')
+		expect(lazy).toContain('data-search-text="Translation in locale-0')
+		expect(lazy).toContain("Last &quot;quoted&quot; &lt;needle&gt;")
+		expect(lazy).not.toContain('<div class="table">')
+		expect(lazy.length).toBeLessThan(eager.length / 3)
+	})
+
+	describe("rendering polled messages", () => {
+		const bundle = (id: string) => ({ id, declarations: [], messages: [] })
+		const project = () => ({
+			db: {},
+			plugins: { get: vi.fn(async () => []) },
+			settings: { get: vi.fn(async () => ({ locales: ["en", "de"] })) },
+		})
+		const deferred = <T>() => {
+			let resolve!: (value: T) => void
+			const promise = new Promise<T>((done) => (resolve = done))
+			return { promise, resolve }
+		}
+		const harness = (initialProject = project()) => {
+			const subscribers: Array<(bundles: ReturnType<typeof bundle>[]) => void> = []
+			pollSubscribe.mockImplementation((listener) => {
+				subscribers.push(listener)
+				return { unsubscribe: vi.fn(async () => undefined) }
+			})
+			const subscriptions: vscode.Disposable[] = []
+			const provider = createMessageWebviewProvider({
+				workspaceFolder: { uri: { fsPath: "/workspace" } } as vscode.WorkspaceFolder,
+				extensionUri: { fsPath: "/extension" } as vscode.Uri,
+				subscriptions,
+			})
+			const refresh = vi.mocked(vscode.workspace.onDidChangeConfiguration).mock.lastCall![0]
+			const bindings: Array<{ dispose: () => unknown }> = []
+			const bind = (nextProject = initialProject) => {
+				bindings.push(
+					provider.bindProject({
+						path: "/workspace/project.inlang",
+						project: nextProject,
+						runTask: completedTask,
+					} as any)
+				)
+			}
+			const views: Array<{ dispose: () => void }> = []
+			const open = () => {
+				let dispose!: () => void
+				let receive!: (message: { command: string }) => void
+				const view = {
+					onDidDispose: vi.fn((callback) => (dispose = callback)),
+					webview: {
+						postMessage: vi.fn(async (_message: unknown) => true),
+						onDidReceiveMessage: vi.fn((callback) => {
+							receive = callback
+							return { dispose: vi.fn() }
+						}),
+						asWebviewUri: vi.fn((uri) => uri),
+						cspSource: "test-csp",
+						options: {},
+						html: "",
+					},
+				}
+				provider.resolveWebviewView(view as unknown as vscode.WebviewView, {} as never, {} as never)
+				const result = {
+					view,
+					dispose: () => dispose(),
+					receive: (command: string, details: Record<string, unknown> = {}) =>
+						receive({ command, ...details }),
+				}
+				views.push(result)
+				return result
+			}
+			bind()
+			return {
+				bind,
+				open,
+				refresh: () => refresh({} as vscode.ConfigurationChangeEvent),
+				publish: async (data: ReturnType<typeof bundle>[], index = subscribers.length - 1) => {
+					await vi.waitFor(() => expect(subscribers.length).toBeGreaterThan(index))
+					subscribers[index]!(data)
+				},
+				waitForSubscriptions: (count: number) =>
+					vi.waitFor(() => expect(subscribers).toHaveLength(count)),
+				dispose: async () => {
+					for (const view of views) view.dispose()
+					for (const binding of bindings) await binding.dispose()
+					for (const subscription of subscriptions) subscription?.dispose()
+				},
+			}
+		}
+
+		it("loads translations on expansion from the polled snapshot and ignores stale requests", async () => {
+			const activeProject = project()
+			const app = harness(activeProject)
+			try {
+				const { view, receive } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([
+					{
+						id: "welcome",
+						declarations: [],
+						messages: [
+							{
+								id: "welcome-en",
+								bundle_id: "welcome",
+								locale: "en",
+								selectors: [],
+								variants: [
+									{
+										id: "v",
+										message_id: "welcome-en",
+										matches: [],
+										pattern: [{ type: "text", value: "Expanded translation" }],
+									},
+								],
+							},
+						],
+					},
+				] as never)
+				await vi.waitFor(() => expect(view.webview.html).toContain('data-message-id="welcome"'))
+				const revision = Number(view.webview.html.match(/const renderRevision = (\d+);/)![1])
+				expect(view.webview.html).not.toContain('<span class="message"><button')
+				receive("expandMessage", { bundleId: "welcome", revision: revision - 1 })
+				expect(activeProject.settings.get).toHaveBeenCalledTimes(1)
+				receive("expandMessage", { bundleId: "welcome", revision })
+				await vi.waitFor(() => expect(view.webview.postMessage).toHaveBeenCalledTimes(1))
+				expect(view.webview.postMessage).toHaveBeenCalledWith({
+					command: "messageDetails",
+					bundleId: "welcome",
+					revision,
+					html: expect.stringContaining("Expanded translation"),
+				})
+				expect(selectBundleById).not.toHaveBeenCalled()
+				expect(selectBundleNested).not.toHaveBeenCalled()
+			} finally {
+				await app.dispose()
+			}
+		})
+
+		it("does not post expanded translations to a disposed webview", async () => {
+			const activeProject = project()
+			const app = harness(activeProject)
+			const settings = deferred<{ locales: string[] }>()
+			try {
+				const { view, receive, dispose } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([bundle("welcome")])
+				await vi.waitFor(() => expect(view.webview.html).toContain('data-message-id="welcome"'))
+				const revision = Number(view.webview.html.match(/const renderRevision = (\d+);/)![1])
+				activeProject.settings.get.mockImplementationOnce(() => settings.promise)
+				receive("expandMessage", { bundleId: "welcome", revision })
+				await vi.waitFor(() => expect(activeProject.settings.get).toHaveBeenCalledTimes(2))
+				dispose()
+				settings.resolve({ locales: ["en", "de"] })
+				await new Promise<void>((resolve) => setImmediate(resolve))
+				expect(view.webview.postMessage).not.toHaveBeenCalled()
+			} finally {
+				settings.resolve({ locales: [] })
+				await app.dispose()
+			}
+		})
+
+		it("renders polled highlights once and ignores unknown references without extra SQL", async () => {
+			const activeProject = project()
+			activeProject.plugins.get.mockResolvedValue([
+				{
+					meta: {
+						"app.inlang.ideExtension": {
+							messageReferenceMatchers: [
+								vi.fn(async () => [
+									{ bundleId: "welcome" },
+									{ bundleId: "welcome" },
+									{ bundleId: "unknown" },
+								]),
+							],
 						},
 					},
-				]),
-			},
-			settings: { get: vi.fn(async () => ({ locales: [] })) },
-		}
-		const subscriptions: vscode.Disposable[] = []
-		const provider = createMessageWebviewProvider({
-			workspaceFolder: { uri: { fsPath: "/workspace" } } as vscode.WorkspaceFolder,
-			extensionUri: { fsPath: "/extension" } as vscode.Uri,
-			subscriptions,
-		})
-		const binding = provider.bindProject({
-			path: "/workspace/project.inlang",
-			project,
-			runTask: completedTask,
-		} as any)
-		let disposeView!: () => void
-
-		provider.resolveWebviewView(
-			{
-				onDidDispose: vi.fn((callback) => (disposeView = callback)),
-				webview: {
-					onDidReceiveMessage: vi.fn(),
-					asWebviewUri: vi.fn((uri) => uri),
-					cspSource: "test-csp",
-					options: {},
-					html: "",
 				},
-			} as unknown as vscode.WebviewView,
-			{} as never,
-			{} as never
-		)
+			] as never)
+			const app = harness(activeProject)
+			try {
+				const { view } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([bundle("welcome")])
+				await vi.waitFor(() => expect(view.webview.html).toContain('class="highlighted-section"'))
+				expect(view.webview.html.match(/data-message-id="welcome"/g)).toHaveLength(2)
+				expect(view.webview.html).not.toContain('data-message-id="unknown"')
+				expect(selectBundleById).not.toHaveBeenCalled()
+				expect(selectBundleNested).not.toHaveBeenCalled()
+			} finally {
+				await app.dispose()
+			}
+		})
 
-		await vi.waitFor(() => expect(selectBundleById).toHaveBeenCalledWith(project, "welcome"))
-		disposeView()
-		await binding.dispose()
-		for (const subscription of subscriptions) subscription?.dispose()
+		it("renders all 611 bundles using one settings read for the completed render", async () => {
+			const activeProject = project()
+			const app = harness(activeProject)
+			try {
+				const { view } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish(Array.from({ length: 611 }, (_, index) => bundle(`message-${index}`)))
+				await vi.waitFor(() => expect(view.webview.html).toContain('data-message-id="message-610"'))
+				expect(view.webview.html.match(/data-message-id=/g)).toHaveLength(611)
+				expect(view.webview.html).not.toContain("Loading messages...")
+				expect(activeProject.settings.get).toHaveBeenCalledTimes(1)
+			} finally {
+				await app.dispose()
+			}
+		})
+
+		it("continues rendering after binding another project and reopening the view", async () => {
+			const app = harness()
+			try {
+				const first = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([bundle("first-project")])
+				await vi.waitFor(() =>
+					expect(first.view.webview.html).toContain('data-message-id="first-project"')
+				)
+				app.bind(project())
+				app.refresh()
+				await app.waitForSubscriptions(2)
+				await app.publish([bundle("second-project")])
+				await vi.waitFor(
+					() => expect(first.view.webview.html).toContain('data-message-id="second-project"'),
+					{ timeout: 2000 }
+				)
+				expect(first.view.webview.html).not.toContain('data-message-id="first-project"')
+				first.dispose()
+				const reopened = app.open()
+				await app.waitForSubscriptions(3)
+				await app.publish([bundle("reopened")])
+				await vi.waitFor(
+					() => expect(reopened.view.webview.html).toContain('data-message-id="reopened"'),
+					{ timeout: 2000 }
+				)
+			} finally {
+				await app.dispose()
+			}
+		})
+
+		it("prevents an older asynchronous render from overwriting newer content", async () => {
+			const activeProject = project()
+			const oldSettings = deferred<{ locales: string[] }>()
+			activeProject.settings.get.mockReturnValueOnce(oldSettings.promise)
+			const app = harness(activeProject)
+			try {
+				const { view } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([bundle("old-message")])
+				await vi.waitFor(() => expect(activeProject.settings.get).toHaveBeenCalledTimes(1))
+				await app.publish([bundle("new-message")])
+				await vi.waitFor(
+					() => expect(view.webview.html).toContain('data-message-id="new-message"'),
+					{ timeout: 2000 }
+				)
+				oldSettings.resolve({ locales: ["en"] })
+				await new Promise((resolve) => setTimeout(resolve, 0))
+				expect(view.webview.html).toContain('data-message-id="new-message"')
+				expect(view.webview.html).not.toContain('data-message-id="old-message"')
+			} finally {
+				oldSettings.resolve({ locales: [] })
+				await app.dispose()
+			}
+		})
+
+		it("retries a failed settings read with the unchanged polled snapshot", async () => {
+			const activeProject = project()
+			activeProject.settings.get.mockRejectedValueOnce(new Error("temporarily unavailable"))
+			const app = harness(activeProject)
+			try {
+				const { view, receive } = app.open()
+				await app.waitForSubscriptions(1)
+				await app.publish([bundle("retry-message")])
+				await vi.waitFor(() => expect(view.webview.html).toContain("Unable to load messages."))
+				expect(view.webview.html).toContain("retryMessages")
+				receive("retryMessages")
+				await vi.waitFor(() =>
+					expect(view.webview.html).toContain('data-message-id="retry-message"')
+				)
+				expect(activeProject.settings.get).toHaveBeenCalledTimes(2)
+				expect(pollSubscribe).toHaveBeenCalledTimes(1)
+			} finally {
+				await app.dispose()
+			}
+		})
 	})
 
 	it("replaces polling when reload creates a new project at the same path", async () => {
