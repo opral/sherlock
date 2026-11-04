@@ -2,4 +2,4 @@
 "vs-code-extension": patch
 ---
 
-Avoid replacing the project when a translation file watcher reports unchanged content during startup. This prevents unnecessary message view resets and editor closures from those notifications while still reloading real resource changes.
+Prevent repeated project reloads when configured translation resource files are missing, preserving the Messages view and open editors while idle. Also verify unchanged startup file notifications before replacing the project. Real resource changes still reload the project.

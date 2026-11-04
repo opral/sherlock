@@ -97,7 +97,12 @@ function escapeGlobFilename(filename: string) {
 }
 
 function isMissingFile(error: unknown) {
-	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		(error.code === "ENOENT" || error.code === "FileNotFound")
+	)
 }
 
 async function fingerprint(filePath: string) {
