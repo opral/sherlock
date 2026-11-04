@@ -63,7 +63,8 @@ const host = vi.hoisted(() => {
 		}),
 		readFile: vi.fn(async (uri: Uri) => {
 			const content = contents.get(uri.fsPath)
-			if (!content) throw Object.assign(new Error("missing"), { code: "ENOENT" })
+			// workspace.fs uses VS Code's error codes, not node:fs's ENOENT.
+			if (!content) throw Object.assign(new Error("missing"), { code: "FileNotFound" })
 			return content
 		}),
 		createFileSystemWatcher: vi.fn(() => {
@@ -509,37 +510,133 @@ describe("project resource synchronization", () => {
 		expect(session.requestReconciliation).not.toHaveBeenCalled()
 	})
 
-	it("does not reconcile a stable load-to-watch handoff", async () => {
-		vi.useFakeTimers()
-		const resourcePath = path.join(path.sep, "workspace", "resources", "en.json")
-		const projectPath = path.join(path.sep, "workspace", "project.inlang")
-		const project = {
-			settings: { get: vi.fn(async () => ({ locales: ["en"] })) },
-			plugins: {
-				get: vi.fn(async () => [
-					{
-						key: "plugin.example",
-						importFiles: vi.fn(),
-						toBeImportedFiles: vi.fn(async () => [{ path: resourcePath, locale: "en" }]),
-					},
-				]),
-			},
+	it.each([false, true])(
+		"does not reconcile a stable load-to-watch handoff (missing=%s)",
+		async (missing) => {
+			vi.useFakeTimers()
+			const resourcePath = path.join(path.sep, "workspace", "resources", "en.json")
+			const projectPath = path.join(path.sep, "workspace", "project.inlang")
+			const project = {
+				settings: { get: vi.fn(async () => ({ locales: ["en"] })) },
+				plugins: {
+					get: vi.fn(async () => [
+						{
+							key: "plugin.example",
+							importFiles: vi.fn(),
+							toBeImportedFiles: vi.fn(async () => [{ path: resourcePath, locale: "en" }]),
+						},
+					]),
+				},
+			}
+			if (!missing) host.contents.set(resourcePath, new TextEncoder().encode("stable"))
+			host.loadProjectFromDirectory.mockImplementationOnce(async ({ fs }) => {
+				await fs.promises.readFile(resourcePath).catch(() => undefined)
+				return project
+			})
+			const synchronization = createProjectResourceSynchronization()
+			await synchronization.load(projectPath)
+			const session = createSession(project, projectPath)
+
+			await synchronization.watch(session as any)
+			await vi.advanceTimersByTimeAsync(150)
+
+			expect(session.requestReconciliation).not.toHaveBeenCalled()
+			await session.ownedResources[0]?.dispose()
 		}
-		host.contents.set(resourcePath, new TextEncoder().encode("stable"))
-		host.loadProjectFromDirectory.mockImplementationOnce(async ({ fs }) => {
-			await fs.promises.readFile(resourcePath)
-			return project
-		})
-		const synchronization = createProjectResourceSynchronization()
-		await synchronization.load(projectPath)
-		const session = createSession(project, projectPath)
+	)
 
-		await synchronization.watch(session as any)
-		await vi.advanceTimersByTimeAsync(150)
+	it.each(["create", "change", "delete"] as const)(
+		"ignores an unchanged %s notification during watcher initialization",
+		async (event) => {
+			vi.useFakeTimers()
+			const resourcePath = path.join(path.sep, "workspace", "resources", "en.json")
+			const projectPath = path.join(path.sep, "workspace", "project.inlang")
+			const project = {
+				settings: { get: vi.fn(async () => ({ locales: ["en"] })) },
+				plugins: {
+					get: vi.fn(async () => [
+						{
+							key: "plugin.example",
+							importFiles: vi.fn(),
+							toBeImportedFiles: vi.fn(async () => [{ path: resourcePath, locale: "en" }]),
+						},
+					]),
+				},
+			}
+			host.contents.set(resourcePath, new TextEncoder().encode("stable"))
+			host.loadProjectFromDirectory.mockImplementationOnce(async ({ fs }) => {
+				await fs.promises.readFile(resourcePath)
+				return project
+			})
+			const synchronization = createProjectResourceSynchronization()
+			await synchronization.load(projectPath)
+			const session = createSession(project, projectPath)
+			const initialRead = deferred<Uint8Array>()
+			host.readFile.mockReturnValueOnce(initialRead.promise)
+			const watching = synchronization.watch(session as any)
+			await vi.waitFor(() => expect(host.watchers).toHaveLength(1))
+			host.watchers[0]!.callbacks[event]!({ fsPath: resourcePath })
+			initialRead.resolve(host.contents.get(resourcePath)!)
+			await watching
+			await vi.advanceTimersByTimeAsync(500)
 
-		expect(session.requestReconciliation).not.toHaveBeenCalled()
-		await session.ownedResources[0]?.dispose()
-	})
+			expect(session.requestReconciliation).not.toHaveBeenCalled()
+			await session.ownedResources[0]?.dispose()
+		}
+	)
+
+	it.each(["create", "change", "delete"] as const)(
+		"reconciles a real %s after a resource's final startup verification",
+		async (event) => {
+			vi.useFakeTimers()
+			const projectPath = path.join(path.sep, "workspace", "project.inlang")
+			const resourcePath = path.join(path.sep, "workspace", "resources", "en.json")
+			const secondPath = path.join(path.sep, "workspace", "resources", "de.json")
+			const project = {
+				settings: { get: vi.fn(async () => ({ locales: ["en", "de"] })) },
+				plugins: {
+					get: vi.fn(async () => [
+						{
+							key: "plugin.example",
+							importFiles: vi.fn(),
+							toBeImportedFiles: vi.fn(async () => [
+								{ path: resourcePath, locale: "en" },
+								{ path: secondPath, locale: "de" },
+							]),
+						},
+					]),
+				},
+			}
+			if (event !== "create") host.contents.set(resourcePath, new TextEncoder().encode("stable"))
+			host.contents.set(secondPath, new TextEncoder().encode("second"))
+			host.loadProjectFromDirectory.mockImplementationOnce(async ({ fs }) => {
+				await fs.promises.readFile(resourcePath).catch(() => undefined)
+				await fs.promises.readFile(secondPath)
+				return project
+			})
+			const synchronization = createProjectResourceSynchronization()
+			await synchronization.load(projectPath)
+			const session = createSession(project, projectPath)
+			const lastRead = deferred<Uint8Array>()
+			const read = host.readFile.getMockImplementation()!
+			host.readFile
+				.mockImplementationOnce(read)
+				.mockImplementationOnce(read)
+				.mockImplementationOnce(read)
+				.mockReturnValueOnce(lastRead.promise)
+			const watching = synchronization.watch(session as any)
+			await vi.waitFor(() => expect(host.readFile).toHaveBeenCalledTimes(4))
+			if (event === "delete") host.contents.delete(resourcePath)
+			else host.contents.set(resourcePath, new TextEncoder().encode("changed"))
+			host.watchers[0]!.callbacks[event]!({ fsPath: resourcePath })
+			lastRead.resolve(host.contents.get(secondPath)!)
+			await watching
+			await vi.advanceTimersByTimeAsync(500)
+
+			expect(session.requestReconciliation).toHaveBeenCalledOnce()
+			await session.ownedResources[0]?.dispose()
+		}
+	)
 
 	it("reconciles a resource created between a missing load and watcher authority", async () => {
 		vi.useFakeTimers()

@@ -97,7 +97,12 @@ function escapeGlobFilename(filename: string) {
 }
 
 function isMissingFile(error: unknown) {
-	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT"
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		(error.code === "ENOENT" || error.code === "FileNotFound")
+	)
 }
 
 async function fingerprint(filePath: string) {
@@ -257,9 +262,9 @@ async function watchProjectResources(args: {
 	const running = new Set<Promise<unknown>>()
 	const pendingEvents = new Map<string, "create" | "change" | "delete">()
 	const processingPaths = new Set<string>()
+	const initializationEvents = new Set<string>()
 	let acceptingEvents = true
 	let initializingFingerprints = true
-	let changedDuringInitialization = false
 	let changedAcrossLoadHandoff = false
 	let reconciliationPending = false
 	let debounceTimer: NodeJS.Timeout | undefined
@@ -323,7 +328,7 @@ async function watchProjectResources(args: {
 	const handleEvent = (filePath: string, event: "create" | "change" | "delete") => {
 		if (!acceptingEvents) return
 		if (initializingFingerprints) {
-			changedDuringInitialization = true
+			initializationEvents.add(filePath)
 			return
 		}
 		pendingEvents.set(filePath, event)
@@ -488,7 +493,11 @@ async function watchProjectResources(args: {
 		}
 	})
 	initializingFingerprints = false
-	if (changedDuringInitialization || changedAcrossLoadHandoff) scheduleReload()
+	// Watcher notifications are hints, not proof of a content change. Recheck paths
+	// notified during setup, including changes after that path's final verification.
+	for (const filePath of initializationEvents) handleEvent(filePath, "change")
+	if (changedAcrossLoadHandoff || (!args.loadSnapshot && initializationEvents.size > 0))
+		scheduleReload()
 
 	return descriptors
 }
